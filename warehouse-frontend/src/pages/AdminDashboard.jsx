@@ -276,7 +276,14 @@ const AdminDashboard = () => {
         </div>
 
         <div className="card-box text-center" style={{ marginBottom: "30px" }}>
-          <h3>📥 Upload Master Stock File</h3>
+          <h3 style={{ marginBottom: "10px" }}>📥 Upload Master Stock File</h3>
+          <p
+            className="text-muted"
+            style={{ marginBottom: "25px", fontSize: "14px" }}
+          >
+            Upload original xlsx/csv schema to broadcast to all warehouse user
+            devices
+          </p>
           <input
             type="file"
             accept=".xlsx, .xls, .csv"
@@ -284,7 +291,11 @@ const AdminDashboard = () => {
             id="admin-file"
             style={{ display: "none" }}
           />
-          <label htmlFor="admin-file" className="btn-primary mt-1">
+          <label
+            htmlFor="admin-file"
+            className="btn-primary"
+            style={{ display: "inline-block" }}
+          >
             Upload New Sheet
           </label>
         </div>

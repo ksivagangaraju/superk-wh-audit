@@ -302,7 +302,7 @@ const AuditWorkspace = () => {
                         : "text"
                   }
                   autoFocus
-                  value={modal.value}
+                  value={modal.value !== undefined ? modal.value : ""}
                   onChange={(e) =>
                     setModal({ ...modal, value: e.target.value })
                   }
