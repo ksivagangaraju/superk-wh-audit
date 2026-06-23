@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:5001");
+const socket = io("https://superk-wh-audit.onrender.com");
 
 const AuditWorkspace = () => {
   const [step, setStep] = useState("zone-select");
@@ -38,7 +38,9 @@ const AuditWorkspace = () => {
 
   const fetchSessionData = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/status");
+      const res = await fetch(
+        "https://superk-wh-audit.onrender.com/api/status",
+      );
       const data = await res.json();
       setZones(data.zones || []);
       setCompletedZones(data.completedZones || []);

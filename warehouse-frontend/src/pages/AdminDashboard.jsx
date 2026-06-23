@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 import * as XLSX from "xlsx";
 
-const socket = io("http://localhost:5001");
+const socket = io("https://superk-wh-audit.onrender.com");
 
 const AdminDashboard = () => {
   const [zones, setZones] = useState([]);
@@ -22,7 +22,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/status")
+    fetch("https://superk-wh-audit.onrender.com/api/status")
       .then((res) => res.json())
       .then((data) => {
         setZones(data.zones || []);
@@ -115,7 +115,7 @@ const AdminDashboard = () => {
           };
         });
 
-        fetch("http://localhost:5001/api/set-data", {
+        fetch("https://superk-wh-audit.onrender.com/api/set-data", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ data: formatted, zones: uniqueZones }),
@@ -143,7 +143,9 @@ const AdminDashboard = () => {
 
   const exportAuditedData = async () => {
     try {
-      const res = await fetch("http://localhost:5001/api/status");
+      const res = await fetch(
+        "https://superk-wh-audit.onrender.com/api/status",
+      );
       const data = await res.json();
 
       const auditedItems = data.masterData.filter(
