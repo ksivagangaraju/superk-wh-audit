@@ -1,0 +1,367 @@
+/* BASE & UTILS */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, sans-serif;
+}
+.screen-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+}
+.bg-dark {
+  background-color: #0f172a;
+  color: white;
+  justify-content: center;
+  align-items: center;
+}
+.bg-light {
+  background-color: #f8fafc;
+  color: #333;
+}
+.bg-gray {
+  background-color: #cbd5e1;
+  position: relative;
+}
+.text-center {
+  text-align: center;
+}
+.text-muted {
+  color: #94a3b8;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+.text-success {
+  color: #16a34a;
+}
+.mt-1 {
+  margin-top: 10px;
+}
+.mt-2 {
+  margin-top: 20px;
+}
+.mt-5 {
+  margin-top: 50px;
+}
+
+/* NAV & BUTTONS */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: white;
+  z-index: 10;
+  border-bottom: 1px solid #e2e8f0;
+}
+button,
+.btn-primary {
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+.btn-success {
+  background: #10b981;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+.btn-text {
+  background: transparent;
+  color: #3b82f6;
+  font-size: 15px;
+  padding: 5px;
+}
+.btn-text.sm {
+  font-size: 12px;
+}
+.btn-text.danger {
+  color: #ef4444;
+}
+.btn-zone {
+  background: #fff;
+  border: 2px solid #cbd5e1;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #0f172a;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+.full-width {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+.btn-zone.completed {
+  background-color: #10b981 !important;
+  color: white !important;
+  border-color: #059669 !important;
+  cursor: not-allowed !important;
+  opacity: 0.85;
+  box-shadow: none;
+}
+
+/* GRID LAYOUTS */
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.full-span {
+  grid-column: 1 / -1;
+}
+
+/* CLICKABLE DATA BOXES */
+.data-box {
+  background: #f1f5f9;
+  border: 2px solid transparent;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+  position: relative;
+}
+.data-box:active {
+  transform: scale(0.96);
+  background: #e2e8f0;
+}
+.data-box.modified {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+.data-box small {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.data-box h3 {
+  font-size: 20px;
+  color: #0f172a;
+}
+.orig-val {
+  display: block;
+  font-size: 12px;
+  color: #ef4444;
+  text-decoration: line-through;
+  margin-top: 5px;
+}
+
+/* BARCODE CHIPS */
+.bc-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.btn-chip {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.btn-wrong {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.btn-back {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.btn-manual {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* CARDS */
+.card-box {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 500px;
+  margin: auto;
+}
+.slide-container {
+  position: absolute;
+  top: 60px;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  cursor: grab;
+}
+.slide-container:active {
+  cursor: grabbing;
+}
+.audit-card {
+  background: white;
+  width: 92%;
+  max-width: 450px;
+  border-radius: 24px;
+  padding: 25px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+/* CARD HEADER */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.tag-location {
+  background: #1e293b;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.tag-status {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.tag-status.pending {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.tag-status.verified {
+  background: #dcfce7;
+  color: #166534;
+}
+.tag-status.discrepancy {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.product-title {
+  font-size: 22px;
+  color: #0f172a;
+  margin-bottom: 25px;
+  line-height: 1.3;
+}
+
+/* TINDER HINTS */
+.tinder-hints {
+  margin-top: 15px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.hint-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.hint-undo {
+  color: #64748b;
+}
+.hint-right {
+  color: #10b981;
+}
+
+/* MODAL POPUP */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.modal-card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modal-card h3 {
+  margin-bottom: 20px;
+  color: #0f172a;
+}
+.modal-input {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #0f172a;
+  outline: none;
+  text-align: center;
+  margin-bottom: 25px;
+}
+.modal-input:focus {
+  border-color: #3b82f6;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.modal-actions button {
+  flex: 1;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
