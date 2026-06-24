@@ -1,3 +1,8 @@
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
 /* BASE & UTILS */
 * {
   box-sizing: border-box;
@@ -357,6 +362,20 @@ button,
 .modal-input:focus {
   border-color: #3b82f6;
 }
+
+input,
+select,
+textarea,
+.modal-input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+input::placeholder {
+  color: #94a3b8 !important;
+}
+
 .modal-actions {
   display: flex;
   gap: 10px;
