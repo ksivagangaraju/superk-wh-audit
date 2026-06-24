@@ -6,10 +6,12 @@
   font-family: system-ui, sans-serif;
 }
 .screen-container {
-  height: 100vh;
+  height: 100dvh;
   width: 100vw;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  padding-bottom: 60px !important;
 }
 .bg-dark {
   background-color: #0f172a;
@@ -134,6 +136,7 @@ button,
   padding: 10px;
   max-width: 600px;
   margin: 0 auto;
+  padding-bottom: 20px;
 }
 .data-grid {
   display: grid;
@@ -219,6 +222,7 @@ button,
   width: 90%;
   max-width: 500px;
   margin: auto;
+  margin-bottom: 40px !important;
 }
 .slide-container {
   position: absolute;
