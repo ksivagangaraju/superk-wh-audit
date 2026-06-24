@@ -5,106 +5,190 @@ const cors = require("cors");
 
 const app = express();
 app.use(cors());
-
-// Payload limit increased to 50MB to handle large master files
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 const server = http.createServer(app);
-
-// Socket.io for Real-time communication
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// --- IN-MEMORY DATABASE ---
-let masterData = [];
-let zonesList = [];
-let completedZones = [];
-let isAuditRunning = false; // Global state to Start/Hold audit
-// --------------------------
+const sessions = {};
 
-// 1. SET MASTER DATA (Frontend sends parsed JSON here)
+app.post("/api/create-session", (req, res) => {
+  const { sessionId } = req.body;
+  if (!sessions[sessionId]) {
+    sessions[sessionId] = {
+      masterData: [],
+      zonesList: [],
+      completedZones: [],
+      unlockedZones: [],
+      completedLocations: [],
+      unlockedLocations: [],
+      isAuditRunning: false,
+    };
+  }
+  res.status(200).json({ success: true });
+});
+
 app.post("/api/set-data", (req, res) => {
-  const { data, zones } = req.body;
-  masterData = data;
-  zonesList = zones;
-  completedZones = [];
-  isAuditRunning = false; // Reset to hold on new upload
+  const { data, zones, sessionId } = req.body;
+  if (!sessionId) return res.status(400).json({ error: "Session ID required" });
 
-  // Notify all connected clients that new data is available
-  io.emit("data-updated", {
-    zones: zonesList,
-    completedZones,
-    masterData,
-    isAuditRunning,
-  });
-  res.status(200).send("Data stored successfully.");
+  if (!sessions[sessionId]) sessions[sessionId] = {};
+
+  sessions[sessionId].masterData = data;
+  sessions[sessionId].zonesList = zones;
+  sessions[sessionId].completedZones = [];
+  sessions[sessionId].unlockedZones = [];
+  sessions[sessionId].completedLocations = [];
+  sessions[sessionId].unlockedLocations = [];
+  sessions[sessionId].isAuditRunning = false;
+
+  io.to(sessionId).emit("data-uploaded");
+
+  res.status(200).json({ success: true, sessionId });
 });
 
-// 2. GET INITIAL DATA (Users/Admin call this when they load the app)
-app.get("/api/status", (req, res) => {
+app.get("/api/status/:sessionId", (req, res) => {
+  const { sessionId } = req.params;
+  const session = sessions[sessionId];
+
+  if (!session) return res.status(404).json({ error: "Session not found" });
+
   res.json({
-    zones: zonesList,
-    completedZones,
-    masterData,
-    isAuditRunning,
-    totalItems: masterData.length,
+    zones: session.zonesList,
+    completedZones: session.completedZones,
+    unlockedZones: session.unlockedZones,
+    completedLocations: session.completedLocations,
+    unlockedLocations: session.unlockedLocations,
+    masterData: session.masterData,
+    isAuditRunning: session.isAuditRunning,
   });
 });
 
-// --- SOCKET.IO LIVE TRACKING LOGIC ---
+app.post("/api/clear-session", (req, res) => {
+  const { sessionId } = req.body;
+  if (sessions[sessionId]) {
+    io.to(sessionId).emit("session-cleared");
+    delete sessions[sessionId];
+    res.status(200).send("Session completely deleted");
+  } else {
+    res.status(404).send("Session not found");
+  }
+});
+
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Send current status immediately to the newly connected user
-  socket.emit("initial-status", {
-    zones: zonesList,
-    completedZones,
-    masterData,
-    isAuditRunning,
-  });
+  socket.on("join-session", (sessionId) => {
+    // 🚨 STRICT ISOLATION FIX: Leave all other session rooms before joining a new one
+    socket.rooms.forEach((room) => {
+      if (room !== socket.id) {
+        socket.leave(room);
+      }
+    });
 
-  // ADMIN ACTION: Toggle Audit State (Start / Hold)
-  socket.on("toggle-audit-state", (status) => {
-    isAuditRunning = status;
-    console.log(`Audit is now ${status ? "RUNNING" : "ON HOLD"}`);
-    io.emit("audit-state-changed", isAuditRunning);
-  });
-
-  // USER ACTION: Auto-Save individual item edit/swipe
-  socket.on("update-item", (updatedItem) => {
-    const index = masterData.findIndex((p) => p.uid === updatedItem.uid);
-    if (index !== -1) {
-      masterData[index] = updatedItem; // Update backend memory instantly
+    socket.join(sessionId);
+    const session = sessions[sessionId];
+    if (session) {
+      socket.emit("initial-status", {
+        zones: session.zonesList,
+        completedZones: session.completedZones,
+        unlockedZones: session.unlockedZones,
+        completedLocations: session.completedLocations,
+        unlockedLocations: session.unlockedLocations,
+        masterData: session.masterData,
+        isAuditRunning: session.isAuditRunning,
+      });
     }
   });
 
-  // USER ACTION: Mark Zone as Complete
-  socket.on("mark-zone-complete", (zoneName) => {
-    if (!completedZones.includes(zoneName)) {
-      completedZones.push(zoneName);
-      console.log(`Zone ${zoneName} marked as Complete.`);
-      io.emit("zone-status-changed", { completedZones });
+  // 🚨 Explicit leave event for when user manually exits
+  socket.on("leave-session", (sessionId) => {
+    socket.leave(sessionId);
+  });
+
+  socket.on("toggle-audit-state", ({ sessionId, status }) => {
+    if (sessions[sessionId]) {
+      sessions[sessionId].isAuditRunning = status;
+      io.to(sessionId).emit("audit-state-changed", status);
     }
   });
 
-  // ADMIN ACTION: Unlock/Reopen a Zone for corrections
-  socket.on("unlock-zone", (zoneName) => {
-    completedZones = completedZones.filter((z) => z !== zoneName);
-    console.log(`Zone ${zoneName} Unlocked by Admin.`);
-    io.emit("zone-status-changed", { completedZones });
+  socket.on("update-item", ({ sessionId, updatedItem }) => {
+    const session = sessions[sessionId];
+    if (session) {
+      const index = session.masterData.findIndex(
+        (p) => p.uid === updatedItem.uid,
+      );
+      if (index !== -1) {
+        session.masterData[index] = updatedItem;
+        io.to(sessionId).emit("item-updated", updatedItem);
+      }
+    }
   });
 
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+  socket.on("mark-location-complete", ({ sessionId, locationKey }) => {
+    const session = sessions[sessionId];
+    if (session && !session.completedLocations.includes(locationKey)) {
+      session.completedLocations.push(locationKey);
+      session.unlockedLocations = session.unlockedLocations.filter(
+        (loc) => loc !== locationKey,
+      );
+      io.to(sessionId).emit("location-status-changed", {
+        completedLocations: session.completedLocations,
+        unlockedLocations: session.unlockedLocations,
+      });
+    }
   });
+
+  socket.on("unlock-location", ({ sessionId, locationKey }) => {
+    const session = sessions[sessionId];
+    if (session) {
+      session.completedLocations = session.completedLocations.filter(
+        (loc) => loc !== locationKey,
+      );
+      if (!session.unlockedLocations.includes(locationKey))
+        session.unlockedLocations.push(locationKey);
+      io.to(sessionId).emit("location-status-changed", {
+        completedLocations: session.completedLocations,
+        unlockedLocations: session.unlockedLocations,
+      });
+    }
+  });
+
+  socket.on("mark-zone-complete", ({ sessionId, zoneName }) => {
+    const session = sessions[sessionId];
+    if (session && !session.completedZones.includes(zoneName)) {
+      session.completedZones.push(zoneName);
+      session.unlockedZones = session.unlockedZones.filter(
+        (z) => z !== zoneName,
+      );
+      io.to(sessionId).emit("zone-status-changed", {
+        completedZones: session.completedZones,
+        unlockedZones: session.unlockedZones,
+      });
+    }
+  });
+
+  socket.on("unlock-zone", ({ sessionId, zoneName }) => {
+    const session = sessions[sessionId];
+    if (session) {
+      session.completedZones = session.completedZones.filter(
+        (z) => z !== zoneName,
+      );
+      if (!session.unlockedZones.includes(zoneName))
+        session.unlockedZones.push(zoneName);
+      io.to(sessionId).emit("zone-status-changed", {
+        completedZones: session.completedZones,
+        unlockedZones: session.unlockedZones,
+      });
+    }
+  });
+
+  socket.on("disconnect", () => console.log(`User disconnected: ${socket.id}`));
 });
 
 const PORT = process.env.PORT || 5001;
-server.listen(PORT, () => {
-  console.log(`✅ Warehouse Backend Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
