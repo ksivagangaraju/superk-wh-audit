@@ -245,7 +245,10 @@ const AuditWorkspace = () => {
       )}
 
       {step === "zone-select" && (
-        <div className="screen-container bg-light">
+        <div
+          className="screen-container bg-light"
+          style={{ overflowY: "auto" }}
+        >
           <div className="top-nav">
             <span className="font-bold">👷 User Audit Workspace</span>
             <button className="btn-secondary" onClick={fetchSessionData}>
@@ -264,7 +267,7 @@ const AuditWorkspace = () => {
                     onClick={() => handleZoneSelect(zone)}
                     disabled={isZoneDone}
                   >
-                    Zone {zone} {isZoneDone ? "✅" : ""}
+                    {zone} {isZoneDone ? "✅" : ""}
                   </button>
                 );
               })}

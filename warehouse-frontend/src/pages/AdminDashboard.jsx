@@ -186,7 +186,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="screen-container bg-light">
+    <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
       {/* GLOBAL CUSTOM ALERT MODAL */}
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
@@ -321,7 +321,7 @@ const AdminDashboard = () => {
                     disabled={true}
                     style={{ width: "100%" }}
                   >
-                    Zone {zone} {isDone ? "✅" : "⏳"}
+                    {zone} {isDone ? "✅" : "⏳"}
                   </button>
                   {isDone && (
                     <button
