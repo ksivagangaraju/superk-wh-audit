@@ -226,6 +226,12 @@ button,
   max-width: 500px;
   margin: auto;
 }
+
+.card-box h2 {
+  font-size: 22px;
+  color: #0f172a;
+}
+
 .slide-container {
   position: absolute;
   top: 70px;
