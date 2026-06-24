@@ -291,7 +291,10 @@ const AuditWorkspace = () => {
       )}
 
       {step === "audit" && (
-        <div className="screen-container bg-gray overflow-hidden">
+        <div
+          className="screen-container bg-gray overflow-hidden"
+          style={{ overflowY: "auto" }}
+        >
           {modal.isOpen && (
             <div className="modal-overlay">
               <div className="modal-card">
