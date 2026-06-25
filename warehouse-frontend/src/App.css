@@ -1,6 +1,16 @@
 body {
-  background-color: #f8fafc;
   color: #0f172a;
+}
+
+/* Body fix for real mobiles */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* FIX: Mobile lo pull-to-refresh valla UI kadalakunda aaputhundi */
+  overscroll-behavior-y: none;
+  background-color: #f8fafc;
 }
 
 /* BASE & UTILS */
@@ -10,11 +20,22 @@ body {
   padding: 0;
   font-family: system-ui, sans-serif;
 }
+/* UI Container exact height fix */
 .screen-container {
-  height: 100vh;
-  width: 100vw;
   display: flex;
   flex-direction: column;
+
+  /* FIX: 100vh for laptop, 100dvh (Dynamic Viewport) for real mobiles with address bars */
+  height: 100vh;
+  height: 100dvh;
+
+  width: 100vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+
+  /* FIX: iPhone Home Bar / Android Navigation overlap avvakunda Safe Area padding */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
 }
 .bg-dark {
   background-color: #0f172a;
@@ -369,6 +390,7 @@ button,
   border-color: #3b82f6;
 }
 
+/* Modal Input & General Inputs strict colors to avoid OS Dark Mode clashes */
 input,
 select,
 textarea,
@@ -376,6 +398,8 @@ textarea,
   background-color: #ffffff !important;
   color: #0f172a !important;
   color-scheme: light !important;
+  /* Prevent zoom on focus in iOS */
+  font-size: 16px !important;
 }
 
 input::placeholder {
