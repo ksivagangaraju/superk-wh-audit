@@ -32,6 +32,8 @@ const AdminDashboard = () => {
     message: "",
     type: "info",
   });
+  const [showInstructions, setShowInstructions] = useState(false);
+
   const showAlert = (message, type = "info") =>
     setAlertModal({ isOpen: true, message, type });
 
@@ -298,6 +300,76 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* INSTRUCTIONS MODAL - ADMIN */}
+        {showInstructions && (
+          <div className="modal-overlay" style={{ zIndex: 9999 }}>
+            <div className="modal-card">
+              <h3 style={{ color: "#3b82f6", textAlign: "center" }}>
+                📖 Admin Guide
+              </h3>
+              <div className="instructions-content">
+                <h4>📊 Required Excel Columns:</h4>
+                <p>
+                  Ensure your Master Excel sheet has these exact column headers
+                  (case-insensitive):
+                </p>
+                <ul>
+                  <li>
+                    <b>Product Name</b> (or SKU Code)
+                  </li>
+                  <li>
+                    <b>Zone</b>
+                  </li>
+                  <li>
+                    <b>Location</b>
+                  </li>
+                  <li>
+                    <b>Qty</b> (or Available Quantity)
+                  </li>
+                  <li>
+                    <b>MRP</b>
+                  </li>
+                  <li>
+                    <b>Exp Date</b>
+                  </li>
+                  <li>
+                    <b>Barcode</b> (Primary Barcode)
+                  </li>
+                  <li>
+                    <b>Alias</b> (Secondary Barcode)
+                  </li>
+                </ul>
+                <h4>🛠️ How to use:</h4>
+                <ul>
+                  <li>
+                    Enter a custom <b>Team ID</b> (min 6 chars) and click Login.
+                    Share this ID with users.
+                  </li>
+                  <li>Upload the formatted Excel file to start.</li>
+                  <li>
+                    Use <b>▶ Start</b> and <b>⏸ Hold</b> to control user access.
+                  </li>
+                  <li>Monitor progress live. Green buttons = completed.</li>
+                  <li>
+                    Click <b>📥 Export Excel</b> anytime to download the audited
+                    data.
+                  </li>
+                  <li>
+                    Click <b>Log Out</b> to permanently close the session.
+                  </li>
+                </ul>
+              </div>
+              <button
+                className="btn-primary full-width"
+                onClick={() => setShowInstructions(false)}
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="card-box text-center" style={{ margin: "0" }}>
           <h2>👑 Admin Login</h2>
           <p className="text-muted mt-2">
@@ -327,6 +399,14 @@ const AdminDashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* FLOATING ACTION BUTTON */}
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
       </div>
     );
   }
@@ -402,6 +482,73 @@ const AdminDashboard = () => {
                 OK
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* INSTRUCTIONS MODAL - ADMIN */}
+      {showInstructions && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-card">
+            <h3 style={{ color: "#3b82f6", textAlign: "center" }}>
+              📖 Admin Guide
+            </h3>
+            <div className="instructions-content">
+              <h4>📊 Required Excel Columns:</h4>
+              <p>
+                Ensure your Master Excel sheet has these exact column headers:
+              </p>
+              <ul>
+                <li>
+                  <b>Product Name</b> (or SKU Code)
+                </li>
+                <li>
+                  <b>Zone</b>
+                </li>
+                <li>
+                  <b>Location</b>
+                </li>
+                <li>
+                  <b>Qty</b> (or Available Quantity)
+                </li>
+                <li>
+                  <b>MRP</b>
+                </li>
+                <li>
+                  <b>Exp Date</b>
+                </li>
+                <li>
+                  <b>Barcode</b> (Primary Barcode)
+                </li>
+                <li>
+                  <b>Alias</b> (Secondary Barcode)
+                </li>
+              </ul>
+              <h4>🛠️ How to use:</h4>
+              <ul>
+                <li>
+                  Share your <b>Team ID</b> ({sessionId}) with the users.
+                </li>
+                <li>
+                  Use <b>▶ Start</b> and <b>⏸ Hold</b> to control user access.
+                </li>
+                <li>Monitor Zone and Location progress live.</li>
+                <li>
+                  If users made a mistake, click <b>🔓 Unlock</b> to give them
+                  access again.
+                </li>
+                <li>
+                  Click <b>📥 Export Excel</b> to download the final audited
+                  discrepancies.
+                </li>
+              </ul>
+            </div>
+            <button
+              className="btn-primary full-width"
+              onClick={() => setShowInstructions(false)}
+            >
+              Got it!
+            </button>
           </div>
         </div>
       )}
@@ -642,6 +789,11 @@ const AdminDashboard = () => {
           </>
         )}
       </div>
+
+      {/* FLOATING ACTION BUTTON */}
+      <button className="fab-button" onClick={() => setShowInstructions(true)}>
+        ?
+      </button>
     </div>
   );
 };

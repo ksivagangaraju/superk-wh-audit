@@ -417,3 +417,54 @@ button {
     opacity: 1;
   }
 }
+
+/* =========================================
+   INSTRUCTION FLOATING BUTTON & CONTENT
+========================================= */
+.fab-button {
+  position: fixed;
+  bottom: 80px; /* Kept high enough to avoid mobile nav bars */
+  right: 20px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 26px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+  border: 2px solid white;
+  cursor: pointer;
+  z-index: 50;
+  transition: 0.2s;
+}
+.fab-button:active {
+  transform: scale(0.9);
+}
+
+.instructions-content {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-bottom: 20px;
+}
+.instructions-content h4 {
+  margin-top: 15px;
+  margin-bottom: 8px;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 5px;
+}
+.instructions-content ul {
+  padding-left: 20px;
+  color: #475569;
+}
+.instructions-content li {
+  margin-bottom: 8px;
+}

@@ -48,6 +48,8 @@ const AuditWorkspace = () => {
     type: "info",
   });
 
+  const [showInstructions, setShowInstructions] = useState(false);
+
   const showAlert = (message, type = "info") =>
     setAlertModal({ isOpen: true, message, type });
 
@@ -265,6 +267,62 @@ const AuditWorkspace = () => {
     };
   };
 
+  // COMMON INSTRUCTIONS RENDER FOR ALL USER SCREENS
+  const renderInstructions = () =>
+    showInstructions && (
+      <div className="modal-overlay" style={{ zIndex: 9999 }}>
+        <div className="modal-card">
+          <h3 style={{ color: "#3b82f6", textAlign: "center" }}>
+            📖 User Guide
+          </h3>
+          <div className="instructions-content">
+            <h4>📱 How to Audit:</h4>
+            <ul>
+              <li>
+                Enter the <b>Team ID</b> given by your Admin.
+              </li>
+              <li>
+                Select your assigned <b>Zone</b> and <b>Location</b>.
+              </li>
+              <li>Check the physical stock against the screen data.</li>
+              <li>
+                <b>Swipe Left</b> ⬅️ if details exactly match.
+              </li>
+              <li>
+                <b>Tap on Boxes</b> (Qty/MRP) to edit if there's a difference.
+              </li>
+              <li>
+                <b>Swipe Down</b> ⬇️ if there is a mismatch to flag the item.
+              </li>
+              <li>
+                <b>Swipe Right</b> ➡️ to Undo the previous item.
+              </li>
+            </ul>
+            <h4>⚠️ Strict Rules:</h4>
+            <ul>
+              <li>
+                <b>Do not audit</b> items outside your selected location.
+              </li>
+              <li>Always verify physical barcodes before swiping.</li>
+              <li>
+                If multiple users are working, do not select the same location
+                simultaneously.
+              </li>
+              <li>
+                Admin monitors your progress live, so accuracy is critical.
+              </li>
+            </ul>
+          </div>
+          <button
+            className="btn-primary full-width"
+            onClick={() => setShowInstructions(false)}
+          >
+            I Understand
+          </button>
+        </div>
+      </div>
+    );
+
   if (step === "join") {
     return (
       <div
@@ -297,6 +355,9 @@ const AuditWorkspace = () => {
             </div>
           </div>
         )}
+
+        {renderInstructions()}
+
         <div className="card-box" style={{ margin: "0" }}>
           <h2>👷 User Access</h2>
           <p className="text-muted mt-2">
@@ -316,6 +377,12 @@ const AuditWorkspace = () => {
             Connect to Audit
           </button>
         </div>
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
       </div>
     );
   }
@@ -347,6 +414,9 @@ const AuditWorkspace = () => {
             Exit Session
           </button>
         </div>
+
+        {renderInstructions()}
+
         <h1 style={{ fontSize: "60px", margin: "0" }}>⏳</h1>
         <h2 style={{ color: "#fcd34d", marginTop: "20px" }}>
           Waiting for Admin
@@ -355,6 +425,12 @@ const AuditWorkspace = () => {
           Session is created, but the Master Excel File hasn't been uploaded
           yet. This screen will auto-refresh when it's ready!
         </p>
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
       </div>
     );
   }
@@ -386,11 +462,20 @@ const AuditWorkspace = () => {
             Exit Session
           </button>
         </div>
+
+        {renderInstructions()}
+
         <h1 style={{ fontSize: "60px", margin: "0" }}>⏸</h1>
         <h2 style={{ color: "#fca5a5", marginTop: "20px" }}>
           Audit is on Hold
         </h2>
         <p className="text-muted">Admin has paused the session...</p>
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
       </div>
     );
   }
@@ -421,6 +506,8 @@ const AuditWorkspace = () => {
           </div>
         </div>
       )}
+
+      {renderInstructions()}
 
       {step === "zone-select" && (
         <div
@@ -470,6 +557,12 @@ const AuditWorkspace = () => {
               <p className="text-muted mt-2">No Zones loaded yet.</p>
             )}
           </div>
+          <button
+            className="fab-button"
+            onClick={() => setShowInstructions(true)}
+          >
+            ?
+          </button>
         </div>
       )}
 
@@ -556,6 +649,12 @@ const AuditWorkspace = () => {
               </div>
             </div>
           )}
+          <button
+            className="fab-button"
+            onClick={() => setShowInstructions(true)}
+          >
+            ?
+          </button>
         </div>
       )}
 
@@ -864,6 +963,12 @@ const AuditWorkspace = () => {
               </div>
             </motion.div>
           </AnimatePresence>
+          <button
+            className="fab-button"
+            onClick={() => setShowInstructions(true)}
+          >
+            ?
+          </button>
         </div>
       )}
     </>
