@@ -541,7 +541,7 @@ const AdminDashboard = () => {
                             onClick={() => setSelectedZoneAdmin(zone)}
                             style={getButtonStyle(isDone, isUnlocked)}
                           >
-                            Zone {zone} <br />{" "}
+                            {zone} <br />{" "}
                             {isDone
                               ? "✅ Locked"
                               : isUnlocked
@@ -602,7 +602,6 @@ const AdminDashboard = () => {
                               padding: "10px",
                             }}
                           >
-                            Location <br />{" "}
                             <b style={{ fontSize: "18px" }}>{loc}</b> <br />{" "}
                             {isDone ? "✅" : isUnlocked ? "🔄" : "⏳"}
                           </button>

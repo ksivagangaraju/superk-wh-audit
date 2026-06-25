@@ -225,6 +225,7 @@ button,
   width: 90%;
   max-width: 500px;
   margin: auto;
+  border-radius: 10px;
 }
 
 .card-box h2 {

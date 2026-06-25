@@ -450,7 +450,7 @@ const AuditWorkspace = () => {
                     disabled={isDone}
                     style={getButtonStyle(isDone, isUnlocked)}
                   >
-                    Zone {zone} <br />{" "}
+                    {zone} <br />{" "}
                     {isDone ? "✅ Locked" : isUnlocked ? "🔄 Correction" : ""}
                   </button>
                 );
@@ -506,7 +506,7 @@ const AuditWorkspace = () => {
                     onClick={() => handleLocationSelect(loc)}
                     style={getButtonStyle(isDone, isUnlocked)}
                   >
-                    Loc {loc} <br /> {isDone ? "✅" : isUnlocked ? "🔄" : ""}
+                    {loc} <br /> {isDone ? "✅" : isUnlocked ? "🔄" : ""}
                   </button>
                 );
               })}
