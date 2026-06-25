@@ -381,6 +381,7 @@ const AuditWorkspace = () => {
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             className="modal-input"
+            style={{ marginBottom: "2px" }}
           />
 
           <input
