@@ -240,7 +240,6 @@ const AdminDashboard = () => {
     });
   };
 
-  // 🚨 FIX: Ippudu Admin "Log Out" kottagane socket clean aipothundi
   const executeLogoutAndClear = () => {
     fetch(`${BACKEND_URL}/api/clear-session`, {
       method: "POST",
@@ -299,7 +298,7 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-        <div className="card-box text-center">
+        <div className="card-box text-center" style={{ margin: "0" }}>
           <h2>👑 Admin Login</h2>
           <p className="text-muted mt-2">
             Enter your Team ID (min 6 chars) to enter workspace.
@@ -356,7 +355,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
+    <div className="screen-container bg-light">
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
           <div className="modal-card text-center">
@@ -478,7 +477,7 @@ const AdminDashboard = () => {
               </h2>
               <p
                 className="text-muted"
-                style={{ marginTop: "10px", fontSize: "14px" }}
+                style={{ marginTop: "10px", fontSize: "14px", marginBottom: 0 }}
               >
                 {isAuditRunning
                   ? "Users can currently access and audit."
@@ -523,7 +522,10 @@ const AdminDashboard = () => {
               {!selectedZoneAdmin ? (
                 <>
                   <h3 style={{ marginBottom: "20px" }}>Monitor Zones</h3>
-                  <div className="zone-grid" style={{ maxWidth: "100%" }}>
+                  <div
+                    className="zone-grid"
+                    style={{ maxWidth: "100%", padding: 0 }}
+                  >
                     {zones.map((zone) => {
                       const isDone = completedZones.includes(zone);
                       const isUnlocked = unlockedZones.includes(zone);
@@ -539,14 +541,21 @@ const AdminDashboard = () => {
                           <button
                             className="btn-zone"
                             onClick={() => setSelectedZoneAdmin(zone)}
-                            style={getButtonStyle(isDone, isUnlocked)}
+                            style={{
+                              ...getButtonStyle(isDone, isUnlocked),
+                              padding: "10px",
+                            }}
                           >
                             {zone} <br />{" "}
-                            {isDone
-                              ? "✅ Locked"
-                              : isUnlocked
-                                ? "🔄 Correction"
-                                : "⏳"}
+                            <span
+                              style={{ fontSize: "13px", fontWeight: "normal" }}
+                            >
+                              {isDone
+                                ? "✅ Locked"
+                                : isUnlocked
+                                  ? "🔄 Correction"
+                                  : "⏳ Active"}
+                            </span>
                           </button>
                           {isDone && (
                             <button
@@ -579,7 +588,10 @@ const AdminDashboard = () => {
                     </button>
                     <h3 style={{ margin: 0 }}>Zone: {selectedZoneAdmin}</h3>
                   </div>
-                  <div className="zone-grid" style={{ maxWidth: "100%" }}>
+                  <div
+                    className="zone-grid"
+                    style={{ maxWidth: "100%", padding: 0 }}
+                  >
                     {getLocationsForAdminZone().map((loc) => {
                       const locKey = `${selectedZoneAdmin}___${loc}`;
                       const isDone = completedLocations.includes(locKey);
@@ -603,7 +615,15 @@ const AdminDashboard = () => {
                             }}
                           >
                             <b style={{ fontSize: "18px" }}>{loc}</b> <br />{" "}
-                            {isDone ? "✅" : isUnlocked ? "🔄" : "⏳"}
+                            <span
+                              style={{ fontSize: "13px", fontWeight: "normal" }}
+                            >
+                              {isDone
+                                ? "✅ Locked"
+                                : isUnlocked
+                                  ? "🔄 Correction"
+                                  : "⏳ Active"}
+                            </span>
                           </button>
                           {isDone && (
                             <button

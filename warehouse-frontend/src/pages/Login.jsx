@@ -9,7 +9,7 @@ const Login = () => {
       className="screen-container bg-dark"
       style={{ justifyContent: "center", alignItems: "center" }}
     >
-      <div className="card-box text-center">
+      <div className="card-box text-center" style={{ margin: "0" }}>
         <h2 style={{ marginBottom: "10px" }}>📦 Warehouse Smart Audit</h2>
         <p className="text-muted" style={{ marginBottom: "30px" }}>
           Select your role to continue

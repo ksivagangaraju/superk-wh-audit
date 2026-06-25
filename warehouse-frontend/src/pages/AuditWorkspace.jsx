@@ -133,7 +133,6 @@ const AuditWorkspace = () => {
     }
   };
 
-  // 🚨 FIX: Ippudu "Exit" kottagane patha room nunchi disconnect ayipotharu
   const handleExitSession = () => {
     if (sessionId) {
       socket.emit("leave-session", sessionId);
@@ -298,7 +297,7 @@ const AuditWorkspace = () => {
             </div>
           </div>
         )}
-        <div className="card-box">
+        <div className="card-box" style={{ margin: "0" }}>
           <h2>👷 User Access</h2>
           <p className="text-muted mt-2">
             Enter the Team ID provided by your Admin
@@ -352,7 +351,7 @@ const AuditWorkspace = () => {
         <h2 style={{ color: "#fcd34d", marginTop: "20px" }}>
           Waiting for Admin
         </h2>
-        <p className="text-muted">
+        <p className="text-muted" style={{ padding: "0 15px" }}>
           Session is created, but the Master Excel File hasn't been uploaded
           yet. This screen will auto-refresh when it's ready!
         </p>
@@ -424,10 +423,7 @@ const AuditWorkspace = () => {
       )}
 
       {step === "zone-select" && (
-        <div
-          className="screen-container bg-light"
-          style={{ overflowY: "auto" }}
-        >
+        <div className="screen-container bg-light">
           <div className="top-nav">
             <span className="font-bold">
               Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
@@ -436,9 +432,12 @@ const AuditWorkspace = () => {
               Exit
             </button>
           </div>
-          <div className="card-box text-center mt-5">
-            <h2>Select Zone</h2>
-            <div className="zone-grid mt-2">
+          <div
+            className="card-box text-center mt-5"
+            style={{ padding: "15px 10px" }}
+          >
+            <h2 style={{ marginBottom: "20px" }}>Select Zone</h2>
+            <div className="zone-grid" style={{ padding: 0 }}>
               {zones.map((zone) => {
                 const isDone = completedZones.includes(zone);
                 const isUnlocked = unlockedZones.includes(zone);
@@ -448,10 +447,19 @@ const AuditWorkspace = () => {
                     className="btn-zone"
                     onClick={() => handleZoneSelect(zone)}
                     disabled={isDone}
-                    style={getButtonStyle(isDone, isUnlocked)}
+                    style={{
+                      ...getButtonStyle(isDone, isUnlocked),
+                      padding: "10px",
+                    }}
                   >
                     {zone} <br />{" "}
-                    {isDone ? "✅ Locked" : isUnlocked ? "🔄 Correction" : ""}
+                    <span style={{ fontSize: "13px", fontWeight: "normal" }}>
+                      {isDone
+                        ? "✅ Locked"
+                        : isUnlocked
+                          ? "🔄 Correction"
+                          : "⏳ Active"}
+                    </span>
                   </button>
                 );
               })}
@@ -464,36 +472,37 @@ const AuditWorkspace = () => {
       )}
 
       {step === "location-select" && (
-        <div
-          className="screen-container bg-light"
-          style={{ overflowY: "auto" }}
-        >
+        <div className="screen-container bg-light">
           <div className="top-nav">
             <button className="btn-text" onClick={() => setStep("zone-select")}>
               ⬅ Zones
             </button>
             <span className="font-bold">Zone: {selectedZone}</span>
           </div>
-          <div className="card-box text-center mt-5">
+          <div
+            className="card-box text-center mt-5"
+            style={{ padding: "15px 10px" }}
+          >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                marginBottom: "20px",
               }}
             >
               <p className="text-muted" style={{ margin: 0 }}>
-                Select a location to audit
+                Select location
               </p>
               <button
                 className="btn-success sm"
                 onClick={() => setIsZoneCompletionModalOpen(true)}
               >
-                ✅ Lock Full Zone
+                ✅ Lock Zone
               </button>
             </div>
 
-            <div className="zone-grid mt-2">
+            <div className="zone-grid" style={{ padding: 0 }}>
               {getLocationsForZone().map((loc) => {
                 const locKey = `${selectedZone}___${loc}`;
                 const isDone = completedLocations.includes(locKey);
@@ -504,9 +513,19 @@ const AuditWorkspace = () => {
                     className="btn-zone"
                     disabled={isDone}
                     onClick={() => handleLocationSelect(loc)}
-                    style={getButtonStyle(isDone, isUnlocked)}
+                    style={{
+                      ...getButtonStyle(isDone, isUnlocked),
+                      padding: "10px",
+                    }}
                   >
-                    {loc} <br /> {isDone ? "✅" : isUnlocked ? "🔄" : ""}
+                    {loc} <br />{" "}
+                    <span style={{ fontSize: "13px", fontWeight: "normal" }}>
+                      {isDone
+                        ? "✅ Locked"
+                        : isUnlocked
+                          ? "🔄 Correction"
+                          : "⏳ Active"}
+                    </span>
                   </button>
                 );
               })}
@@ -521,10 +540,7 @@ const AuditWorkspace = () => {
                   Are you sure you have completed all locations in Zone{" "}
                   {selectedZone}?
                 </p>
-                <div
-                  className="modal-actions"
-                  style={{ flexDirection: "column", gap: "10px" }}
-                >
+                <div className="modal-actions">
                   <button
                     className="btn-success full-width"
                     onClick={confirmZoneCompletion}
@@ -587,15 +603,12 @@ const AuditWorkspace = () => {
                 <p style={{ margin: "15px 0" }}>
                   Are you sure you want to lock location {selectedLocation}?
                 </p>
-                <div
-                  className="modal-actions"
-                  style={{ flexDirection: "column", gap: "10px" }}
-                >
+                <div className="modal-actions">
                   <button
                     className="btn-success full-width"
                     onClick={confirmLocationCompletion}
                   >
-                    ✅ Lock Location
+                    ✅ Lock
                   </button>
                   <button
                     className="btn-secondary full-width"
@@ -613,10 +626,7 @@ const AuditWorkspace = () => {
               <div className="modal-card text-center">
                 <h3 style={{ color: "#ef4444" }}>⚠️ Flag Mismatch</h3>
                 <p style={{ margin: "15px 0" }}>Confirm mismatch entry?</p>
-                <div
-                  className="modal-actions"
-                  style={{ flexDirection: "column", gap: "10px" }}
-                >
+                <div className="modal-actions">
                   <button
                     className="btn-danger full-width"
                     onClick={() => {
@@ -624,7 +634,7 @@ const AuditWorkspace = () => {
                       handleAuditAction("Discrepancy");
                     }}
                   >
-                    🚨 Flag Mistake
+                    🚨 Flag
                   </button>
                   <button
                     className="btn-secondary full-width"
@@ -750,26 +760,35 @@ const AuditWorkspace = () => {
                         <h3 className="text-success">
                           {filteredProducts[currentIndex]?.ActualBarcode}
                         </h3>
-                        <button
-                          className="btn-text sm"
-                          onClick={() =>
-                            setModal({
-                              isOpen: true,
-                              field: "ActualBarcode",
-                              value:
-                                filteredProducts[currentIndex]?.ActualBarcode,
-                              title: "Physical Barcode",
-                            })
-                          }
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: "10px",
+                            marginTop: "10px",
+                          }}
                         >
-                          ✎ Edit Manual
-                        </button>
-                        <button
-                          className="btn-text sm danger"
-                          onClick={resetManualBarcode}
-                        >
-                          Reset
-                        </button>
+                          <button
+                            className="btn-text sm"
+                            onClick={() =>
+                              setModal({
+                                isOpen: true,
+                                field: "ActualBarcode",
+                                value:
+                                  filteredProducts[currentIndex]?.ActualBarcode,
+                                title: "Physical Barcode",
+                              })
+                            }
+                          >
+                            ✎ Edit
+                          </button>
+                          <button
+                            className="btn-text sm danger"
+                            onClick={resetManualBarcode}
+                          >
+                            Reset
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="bc-logic-view">
@@ -840,7 +859,7 @@ const AuditWorkspace = () => {
                       marginTop: "10px",
                     }}
                   >
-                    ⬇ Swipe Down/Diagonal to Flag Mistake
+                    ⬇ Swipe Down to Flag Mistake
                   </div>
                 </div>
               </div>
