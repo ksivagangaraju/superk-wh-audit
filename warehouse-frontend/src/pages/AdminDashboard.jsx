@@ -771,7 +771,7 @@ const AdminDashboard = () => {
                               padding: "10px",
                             }}
                           >
-                            <b style={{ fontSize: "18px" }}>{loc}</b> <br />{" "}
+                            <b>{loc}</b> <br />{" "}
                             <span
                               style={{ fontSize: "13px", fontWeight: "normal" }}
                             >
