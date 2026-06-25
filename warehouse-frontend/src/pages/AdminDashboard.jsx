@@ -185,6 +185,7 @@ const AdminDashboard = () => {
             Barcode2: getVal("Alias") || "N/A",
             ActualBarcode: "",
             AuditStatus: "Pending",
+            AuditedBy: "",
           };
         });
 
@@ -223,6 +224,16 @@ const AdminDashboard = () => {
       );
     }
     try {
+      const exportFormat = auditedData.map((item) => ({
+        "Product Name": item.ProductName,
+        Zone: item.Zone,
+        Location: item.Location,
+        "System Qty": item.SystemQty,
+        "Actual Qty": item.ActualQty,
+        "Audit Status": item.AuditStatus,
+        "Audited By": item.AuditedBy || "Unknown",
+      }));
+
       const ws = XLSX.utils.json_to_sheet(auditedData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Audited_Data");

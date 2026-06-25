@@ -16,6 +16,10 @@ const AuditWorkspace = () => {
   );
   const [inputSessionId, setInputSessionId] = useState("");
 
+  const [userName, setUserName] = useState(
+    localStorage.getItem("userName") || "",
+  );
+
   const [step, setStep] = useState(sessionId ? "zone-select" : "join");
 
   const [allProducts, setAllProducts] = useState([]);
@@ -128,10 +132,11 @@ const AuditWorkspace = () => {
   }, [sessionId]);
 
   const handleJoinSession = () => {
-    if (inputSessionId.trim().length >= 6) {
+    if (inputSessionId.trim().length >= 6 && userName.trim() !== "") {
+      localStorage.setItem("userName", userName.trim());
       setSessionId(inputSessionId.trim());
     } else {
-      showAlert("Team ID must be at least 6 characters long.", "error");
+      showAlert("Please enter your Name AND a Team ID (min 6 chars).", "error");
     }
   };
 
@@ -141,6 +146,7 @@ const AuditWorkspace = () => {
     }
     setSessionId("");
     localStorage.removeItem("userSessionId");
+    localStorage.removeItem("userName");
     setStep("join");
   };
 
@@ -174,7 +180,12 @@ const AuditWorkspace = () => {
   const updateProductState = (uid, field, value, extraFields = {}) => {
     const updatedFiltered = filteredProducts.map((p) => {
       if (p.uid === uid) {
-        const updatedItem = { ...p, [field]: value, ...extraFields };
+        const updatedItem = {
+          ...p,
+          [field]: value,
+          AuditedBy: userName,
+          ...extraFields,
+        };
         socket.emit("update-item", { sessionId, updatedItem });
         return updatedItem;
       }
@@ -183,7 +194,9 @@ const AuditWorkspace = () => {
     setFilteredProducts(updatedFiltered);
 
     const updatedAll = allProducts.map((p) =>
-      p.uid === uid ? { ...p, [field]: value, ...extraFields } : p,
+      p.uid === uid
+        ? { ...p, [field]: value, AuditedBy: userName, ...extraFields }
+        : p,
     );
     setAllProducts(updatedAll);
   };
@@ -360,9 +373,17 @@ const AuditWorkspace = () => {
 
         <div className="card-box" style={{ margin: "0" }}>
           <h2>👷 User Access</h2>
-          <p className="text-muted mt-2">
-            Enter the Team ID provided by your Admin
-          </p>
+          <p className="text-muted mt-2">Enter your Name and Team ID</p>
+
+          <input
+            type="text"
+            placeholder="Your Full Name"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            className="modal-input"
+            style={{ marginBottom: "10px" }}
+          />
+
           <input
             type="text"
             placeholder="Team ID (min 6 chars)"
