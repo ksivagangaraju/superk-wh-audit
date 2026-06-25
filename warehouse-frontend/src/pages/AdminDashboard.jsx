@@ -767,8 +767,6 @@ const AdminDashboard = () => {
                             disabled={true}
                             style={{
                               ...getButtonStyle(isDone, isUnlocked),
-                              fontSize: "14px",
-                              padding: "10px",
                             }}
                           >
                             <b>{loc}</b> <br />{" "}
