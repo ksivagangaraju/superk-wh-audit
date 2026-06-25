@@ -355,7 +355,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="screen-container bg-light">
+    <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
           <div className="modal-card text-center">
@@ -543,7 +543,6 @@ const AdminDashboard = () => {
                             onClick={() => setSelectedZoneAdmin(zone)}
                             style={{
                               ...getButtonStyle(isDone, isUnlocked),
-                              padding: "10px",
                             }}
                           >
                             {zone} <br />{" "}

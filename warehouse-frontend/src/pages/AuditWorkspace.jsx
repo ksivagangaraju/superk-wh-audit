@@ -423,7 +423,10 @@ const AuditWorkspace = () => {
       )}
 
       {step === "zone-select" && (
-        <div className="screen-container bg-light">
+        <div
+          className="screen-container bg-light"
+          style={{ overflowY: "auto" }}
+        >
           <div className="top-nav">
             <span className="font-bold">
               Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
@@ -449,7 +452,6 @@ const AuditWorkspace = () => {
                     disabled={isDone}
                     style={{
                       ...getButtonStyle(isDone, isUnlocked),
-                      padding: "10px",
                     }}
                   >
                     {zone} <br />{" "}
@@ -472,17 +474,17 @@ const AuditWorkspace = () => {
       )}
 
       {step === "location-select" && (
-        <div className="screen-container bg-light">
+        <div
+          className="screen-container bg-light"
+          style={{ overflowY: "auto" }}
+        >
           <div className="top-nav">
             <button className="btn-text" onClick={() => setStep("zone-select")}>
               ⬅ Zones
             </button>
             <span className="font-bold">Zone: {selectedZone}</span>
           </div>
-          <div
-            className="card-box text-center mt-5"
-            style={{ padding: "15px 10px" }}
-          >
+          <div className="card-box text-center mt-5">
             <div
               style={{
                 display: "flex",
@@ -502,7 +504,7 @@ const AuditWorkspace = () => {
               </button>
             </div>
 
-            <div className="zone-grid" style={{ padding: 0 }}>
+            <div className="zone-grid mt-2">
               {getLocationsForZone().map((loc) => {
                 const locKey = `${selectedZone}___${loc}`;
                 const isDone = completedLocations.includes(locKey);
@@ -513,10 +515,7 @@ const AuditWorkspace = () => {
                     className="btn-zone"
                     disabled={isDone}
                     onClick={() => handleLocationSelect(loc)}
-                    style={{
-                      ...getButtonStyle(isDone, isUnlocked),
-                      padding: "10px",
-                    }}
+                    style={{ ...getButtonStyle(isDone, isUnlocked) }}
                   >
                     {loc} <br />{" "}
                     <span style={{ fontSize: "13px", fontWeight: "normal" }}>
@@ -756,7 +755,7 @@ const AuditWorkspace = () => {
                   <div className="data-box full-span">
                     <small>Barcode Verification</small>
                     {filteredProducts[currentIndex]?.barcodePhase === 2 ? (
-                      <div className="bc-manual-view">
+                      <div className>
                         <h3 className="text-success">
                           {filteredProducts[currentIndex]?.ActualBarcode}
                         </h3>
