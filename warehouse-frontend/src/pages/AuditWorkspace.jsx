@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
 
@@ -14,14 +14,19 @@ const AuditWorkspace = () => {
   const [sessionId, setSessionId] = useState(
     localStorage.getItem("userSessionId") || "",
   );
-  const [inputSessionId, setInputSessionId] = useState("");
-
   const [userName, setUserName] = useState(
     localStorage.getItem("userName") || "",
   );
+  const [inputSessionId, setInputSessionId] = useState("");
+  const [step, setStep] = useState(sessionId ? "module-select" : "join");
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
+  const [showInstructions, setShowInstructions] = useState(false);
 
-  const [step, setStep] = useState(sessionId ? "zone-select" : "join");
-
+  // INVENTORY
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [zones, setZones] = useState([]);
@@ -29,30 +34,30 @@ const AuditWorkspace = () => {
   const [unlockedZones, setUnlockedZones] = useState([]);
   const [completedLocations, setCompletedLocations] = useState([]);
   const [unlockedLocations, setUnlockedLocations] = useState([]);
-
   const [selectedZone, setSelectedZone] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const [isAuditRunning, setIsAuditRunning] = useState(false);
-
   const [modal, setModal] = useState({
     isOpen: false,
     field: "",
     value: "",
     title: "",
   });
+  const [showScanner, setShowScanner] = useState(false);
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
   const [isFlagConfirmModalOpen, setIsFlagConfirmModalOpen] = useState(false);
   const [isZoneCompletionModalOpen, setIsZoneCompletionModalOpen] =
     useState(false);
-  const [alertModal, setAlertModal] = useState({
-    isOpen: false,
-    message: "",
-    type: "info",
-  });
 
-  const [showInstructions, setShowInstructions] = useState(false);
+  // DISPATCH
+  const [dispatchData, setDispatchData] = useState([]);
+  const [isDispatchRunning, setIsDispatchRunning] = useState(false);
+  const [currentPalletInput, setCurrentPalletInput] = useState("");
+  const [searchCartonInput, setSearchCartonInput] = useState("");
+  const [activePallet, setActivePallet] = useState(null);
+  const [cartonScanInput, setCartonScanInput] = useState("");
+  const scanInputRef = useRef(null);
 
   const showAlert = (message, type = "info") =>
     setAlertModal({ isOpen: true, message, type });
@@ -61,15 +66,9 @@ const AuditWorkspace = () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/status/${sessionId}`);
       const data = await res.json();
-
       if (data.error) {
         handleExitSession();
         return showAlert("Session is invalid or closed by Admin.", "error");
-      }
-
-      if (!data.masterData || data.masterData.length === 0) {
-        setStep("waiting");
-        return;
       }
 
       setZones(data.zones || []);
@@ -78,16 +77,23 @@ const AuditWorkspace = () => {
       setCompletedLocations(data.completedLocations || []);
       setUnlockedLocations(data.unlockedLocations || []);
       setIsAuditRunning(data.isAuditRunning || false);
-      if (data.masterData) {
+      setDispatchData(data.dispatchData || []);
+      setIsDispatchRunning(data.isDispatchRunning || false);
+
+      if (data.masterData)
         setAllProducts(
           data.masterData.map((item) => ({
             ...item,
             barcodePhase: item.barcodePhase || 0,
           })),
         );
+      if (activePallet && data.dispatchData) {
+        const updatedPallet = data.dispatchData.find(
+          (p) => p.PalletNumber === activePallet.PalletNumber,
+        );
+        if (updatedPallet) setActivePallet(updatedPallet);
       }
-
-      if (step === "join" || step === "waiting") setStep("zone-select");
+      if (step === "join" || step === "waiting") setStep("module-select");
     } catch (err) {
       console.error("Error connecting:", err);
       handleExitSession();
@@ -112,13 +118,37 @@ const AuditWorkspace = () => {
       setUnlockedLocations(data.unlockedLocations || []);
     });
     socket.on("audit-state-changed", (status) => setIsAuditRunning(status));
+    socket.on("dispatch-state-changed", (status) =>
+      setIsDispatchRunning(status),
+    );
+    socket.on("data-uploaded", () => fetchSessionData());
 
-    socket.on("data-uploaded", () => {
-      fetchSessionData();
+    socket.on("dispatch-data-updated", (dData) => {
+      setDispatchData(dData);
+      if (activePallet) {
+        const updatedPallet = dData.find(
+          (p) => p.PalletNumber === activePallet.PalletNumber,
+        );
+        if (updatedPallet) setActivePallet(updatedPallet);
+        else {
+          setActivePallet(null);
+          setStep("dispatch-pallet");
+          showAlert(
+            "Admin updated Dispatch list. Please re-enter Pallet Number.",
+            "info",
+          );
+        }
+      }
+    });
+
+    socket.on("dispatch-scan-result", (res) => {
+      showAlert(res.message, res.success ? "info" : "error");
+      setCartonScanInput("");
+      if (scanInputRef.current) scanInputRef.current.focus();
     });
 
     socket.on("session-cleared", () => {
-      showAlert("Admin has logged out. Session closed.", "info");
+      showAlert("Admin has logged out.", "info");
       handleExitSession();
     });
 
@@ -126,10 +156,13 @@ const AuditWorkspace = () => {
       socket.off("zone-status-changed");
       socket.off("location-status-changed");
       socket.off("audit-state-changed");
-      socket.off("session-cleared");
+      socket.off("dispatch-state-changed");
       socket.off("data-uploaded");
+      socket.off("dispatch-data-updated");
+      socket.off("dispatch-scan-result");
+      socket.off("session-cleared");
     };
-  }, [sessionId]);
+  }, [sessionId, activePallet]);
 
   const handleJoinSession = () => {
     if (inputSessionId.trim().length >= 6 && userName.trim() !== "") {
@@ -141,27 +174,76 @@ const AuditWorkspace = () => {
   };
 
   const handleExitSession = () => {
-    if (sessionId) {
-      socket.emit("leave-session", sessionId);
-    }
+    if (sessionId) socket.emit("leave-session", sessionId);
     setSessionId("");
     localStorage.removeItem("userSessionId");
     localStorage.removeItem("userName");
     setStep("join");
   };
 
+  const handleEnterPallet = () => {
+    const input = currentPalletInput.trim().toLowerCase();
+    const pallet = dispatchData.find(
+      (p) =>
+        (p.PalletNumber && p.PalletNumber.toLowerCase() === input) ||
+        (p.StoreName && p.StoreName.toLowerCase() === input),
+    );
+    if (pallet) {
+      setActivePallet(pallet);
+      setStep("dispatch-scan");
+    } else {
+      showAlert(
+        "Pallet/Store Not Found! Please check the name or number.",
+        "error",
+      );
+    }
+  };
+
+  const handleFindCarton = (e) => {
+    e.preventDefault();
+    const carton = searchCartonInput.trim();
+    if (!carton) return;
+    let foundStore = null;
+    for (let store of dispatchData) {
+      if (store.ExpectedCartons.includes(carton)) {
+        foundStore = store;
+        break;
+      }
+    }
+    if (foundStore)
+      showAlert(
+        `📦 Carton: ${carton}\n🏢 Store: ${foundStore.StoreName}\n📍 Pallet: ${foundStore.PalletNumber || "Not Assigned"}`,
+        "info",
+      );
+    else
+      showAlert(
+        `Carton ${carton} not found in today's Dispatch list!`,
+        "error",
+      );
+    setSearchCartonInput("");
+  };
+
+  const handleScanSubmit = (e) => {
+    e.preventDefault();
+    if (cartonScanInput.trim() === "") return;
+    socket.emit("verify-dispatch-carton", {
+      sessionId,
+      currentPallet: activePallet.PalletNumber,
+      cartonNumber: cartonScanInput.trim(),
+      userName,
+    });
+  };
+
   const handleZoneSelect = (zone) => {
     setSelectedZone(zone);
     setStep("location-select");
   };
-
   const getLocationsForZone = () => {
     const itemsInZone = allProducts.filter(
       (p) => String(p.Zone) === String(selectedZone),
     );
     return [...new Set(itemsInZone.map((p) => p.Location))].sort();
   };
-
   const handleLocationSelect = (loc) => {
     setSelectedLocation(loc);
     const filtered = allProducts.filter(
@@ -169,9 +251,7 @@ const AuditWorkspace = () => {
         String(p.Zone) === String(selectedZone) &&
         String(p.Location) === String(loc),
     );
-
     if (filtered.length === 0) return showAlert(`No items in ${loc}`, "error");
-
     setFilteredProducts(filtered);
     setCurrentIndex(0);
     setStep("audit");
@@ -192,7 +272,6 @@ const AuditWorkspace = () => {
       return p;
     });
     setFilteredProducts(updatedFiltered);
-
     const updatedAll = allProducts.map((p) =>
       p.uid === uid
         ? { ...p, [field]: value, AuditedBy: userName, ...extraFields }
@@ -208,23 +287,19 @@ const AuditWorkspace = () => {
     setModal({ ...modal, isOpen: false });
   };
 
-  const changeBarcodePhaseState = (phaseNum) => {
+  const changeBarcodePhaseState = (phaseNum) =>
     updateProductState(
       filteredProducts[currentIndex].uid,
       "barcodePhase",
       phaseNum,
     );
-  };
-
-  const resetManualBarcode = () => {
+  const resetManualBarcode = () =>
     updateProductState(
       filteredProducts[currentIndex].uid,
       "ActualBarcode",
       "",
       { barcodePhase: 0 },
     );
-  };
-
   const handleAuditAction = (status) => {
     updateProductState(
       filteredProducts[currentIndex].uid,
@@ -235,20 +310,17 @@ const AuditWorkspace = () => {
       setCurrentIndex((prev) => prev + 1);
     else setIsCompletionModalOpen(true);
   };
-
   const confirmLocationCompletion = () => {
     const locationKey = `${selectedZone}___${selectedLocation}`;
     socket.emit("mark-location-complete", { sessionId, locationKey });
     setIsCompletionModalOpen(false);
     setStep("location-select");
   };
-
   const confirmZoneCompletion = () => {
     socket.emit("mark-zone-complete", { sessionId, zoneName: selectedZone });
     setIsZoneCompletionModalOpen(false);
     setStep("zone-select");
   };
-
   const handleDragEnd = (e, info) => {
     const x = info.offset.x;
     const y = info.offset.y;
@@ -280,7 +352,6 @@ const AuditWorkspace = () => {
     };
   };
 
-  // COMMON INSTRUCTIONS RENDER FOR ALL USER SCREENS
   const renderInstructions = () =>
     showInstructions && (
       <div className="modal-overlay" style={{ zIndex: 9999 }}>
@@ -289,41 +360,25 @@ const AuditWorkspace = () => {
             📖 User Guide
           </h3>
           <div className="instructions-content">
-            <h4>📱 How to Audit:</h4>
+            <h4>📦 Inventory Audit:</h4>
             <ul>
-              <li>
-                Enter the <b>Team ID</b> given by your Admin.
-              </li>
               <li>
                 Select your assigned <b>Zone</b> and <b>Location</b>.
               </li>
-              <li>Check the physical stock against the screen data.</li>
+              <li>Check physical stock against screen data.</li>
               <li>
                 <b>Swipe Left</b> ⬅️ if details exactly match.
               </li>
               <li>
-                <b>Tap on Boxes</b> (Qty/MRP) to edit if there's a difference.
-              </li>
-              <li>
-                <b>Swipe Down</b> ⬇️ if there is a mismatch to flag the item.
-              </li>
-              <li>
-                <b>Swipe Right</b> ➡️ to Undo the previous item.
+                <b>Tap on Boxes</b> to edit differences.
               </li>
             </ul>
-            <h4>⚠️ Strict Rules:</h4>
+            <h4>🚚 Dispatch Verify:</h4>
             <ul>
               <li>
-                <b>Do not audit</b> items outside your selected location.
+                Enter your assigned <b>Pallet Number</b> or Store Name.
               </li>
-              <li>Always verify physical barcodes before swiping.</li>
-              <li>
-                If multiple users are working, do not select the same location
-                simultaneously.
-              </li>
-              <li>
-                Admin monitors your progress live, so accuracy is critical.
-              </li>
+              <li>Scan carton barcodes to verify them against the pallet.</li>
             </ul>
           </div>
           <button
@@ -353,7 +408,12 @@ const AuditWorkspace = () => {
                 {alertModal.type === "error" ? "⚠️ Error" : "ℹ️ Notification"}
               </h3>
               <p
-                style={{ margin: "15px 0", color: "#475569", fontSize: "15px" }}
+                style={{
+                  margin: "15px 0",
+                  color: "#475569",
+                  fontSize: "15px",
+                  whiteSpace: "pre-line",
+                }}
               >
                 {alertModal.message}
               </p>
@@ -368,13 +428,10 @@ const AuditWorkspace = () => {
             </div>
           </div>
         )}
-
         {renderInstructions()}
-
         <div className="card-box" style={{ margin: "0" }}>
           <h2>👷 User Access</h2>
           <p className="text-muted mt-2">Enter your Name and Team ID</p>
-
           <input
             type="text"
             placeholder="Your Full Name"
@@ -383,7 +440,6 @@ const AuditWorkspace = () => {
             className="modal-input"
             style={{ marginBottom: "2px" }}
           />
-
           <input
             type="text"
             placeholder="Team ID (min 6 chars)"
@@ -395,7 +451,7 @@ const AuditWorkspace = () => {
             className="btn-primary full-width"
             onClick={handleJoinSession}
           >
-            Connect to Audit
+            Connect
           </button>
         </div>
         <button
@@ -403,6 +459,375 @@ const AuditWorkspace = () => {
           onClick={() => setShowInstructions(true)}
         >
           ?
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "module-select") {
+    return (
+      <div className="screen-container bg-light text-center">
+        <div className="top-nav">
+          <span className="font-bold">Team ID: {sessionId}</span>{" "}
+          <button className="btn-text danger" onClick={handleExitSession}>
+            Exit
+          </button>
+        </div>
+        {renderInstructions()}
+        <div style={{ padding: "20px", marginTop: "30px" }}>
+          <h2>Select Work Module</h2>
+          <div
+            className="module-select-card mt-5"
+            onClick={() => {
+              if (allProducts.length === 0) setStep("waiting");
+              else setStep("zone-select");
+            }}
+          >
+            <h3>📦 Inventory Audit</h3>
+            <p className="text-muted">Verify physical stock in zones.</p>
+          </div>
+          <div
+            className="module-select-card"
+            onClick={() => {
+              if (dispatchData.length === 0)
+                showAlert("Admin hasn't uploaded Dispatch Data yet.", "error");
+              else setStep("dispatch-pallet");
+            }}
+          >
+            <h3>🚚 Dispatch Verify</h3>
+            <p className="text-muted">Scan cartons to pallets.</p>
+          </div>
+        </div>
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
+      </div>
+    );
+  }
+
+  if (
+    !isDispatchRunning &&
+    dispatchData.length > 0 &&
+    step.startsWith("dispatch")
+  ) {
+    return (
+      <div
+        className="screen-container bg-dark text-center"
+        style={{ justifyContent: "center", position: "relative" }}
+      >
+        <div
+          className="top-nav"
+          style={{
+            position: "absolute",
+            top: 0,
+            width: "100%",
+            background: "rgba(15, 23, 42, 0.9)",
+            borderBottom: "1px solid #334155",
+          }}
+        >
+          <span className="font-bold" style={{ color: "white" }}>
+            Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
+          </span>
+          <button
+            className="btn-text danger"
+            style={{ color: "#ef4444" }}
+            onClick={handleExitSession}
+          >
+            Exit
+          </button>
+        </div>
+        <h1 style={{ fontSize: "60px", margin: "0" }}>⏸</h1>
+        <h2 style={{ color: "#fca5a5", marginTop: "20px" }}>
+          Dispatch on Hold
+        </h2>
+        <p className="text-muted">Admin has paused the dispatch scan...</p>
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setActivePallet(null);
+            setStep("module-select");
+          }}
+          style={{ marginTop: "20px" }}
+        >
+          ⬅ Back to Menu
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "dispatch-pallet") {
+    return (
+      <div className="screen-container bg-light text-center">
+        {alertModal.isOpen && (
+          <div className="modal-overlay" style={{ zIndex: 9999 }}>
+            <div className="modal-card text-center">
+              <h3
+                style={{
+                  color: alertModal.type === "error" ? "#ef4444" : "#3b82f6",
+                }}
+              >
+                {alertModal.type === "error" ? "⚠️ Notice" : "ℹ️ Info"}
+              </h3>
+              <p
+                style={{
+                  margin: "15px 0",
+                  color: "#475569",
+                  whiteSpace: "pre-line",
+                }}
+              >
+                {alertModal.message}
+              </p>
+              <button
+                className="btn-primary full-width"
+                onClick={() =>
+                  setAlertModal({ isOpen: false, message: "", type: "info" })
+                }
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
+        {renderInstructions()}
+        <div className="top-nav">
+          <button className="btn-text" onClick={() => setStep("module-select")}>
+            ⬅ Back
+          </button>{" "}
+          <span className="font-bold">Dispatch</span>
+        </div>
+        <div style={{ padding: "20px" }}>
+          <div
+            className="card-box"
+            style={{ margin: "0 auto 20px auto", padding: "20px" }}
+          >
+            <h3 style={{ marginBottom: "10px" }}>📍 Open Pallet</h3>
+            <p className="text-muted" style={{ fontSize: "13px" }}>
+              Enter Pallet No or Store Name
+            </p>
+            <input
+              type="text"
+              className="modal-input"
+              placeholder="e.g. P-01"
+              value={currentPalletInput}
+              onChange={(e) => setCurrentPalletInput(e.target.value)}
+              autoFocus
+            />
+            <button
+              className="btn-primary full-width"
+              onClick={handleEnterPallet}
+            >
+              Open to Scan
+            </button>
+          </div>
+          <div
+            className="card-box"
+            style={{
+              margin: "0 auto",
+              padding: "20px",
+              background: "#f8fafc",
+              border: "2px dashed #cbd5e1",
+            }}
+          >
+            <h3 style={{ marginBottom: "10px", color: "#475569" }}>
+              📦 Find Pallet
+            </h3>
+            <p className="text-muted" style={{ fontSize: "13px" }}>
+              Scan carton to check its Pallet
+            </p>
+            <form onSubmit={handleFindCarton}>
+              <input
+                type="text"
+                className="modal-input"
+                placeholder="Scan Carton Barcode..."
+                value={searchCartonInput}
+                onChange={(e) => setSearchCartonInput(e.target.value)}
+              />
+              <button type="submit" className="btn-secondary full-width">
+                🔍 Search Carton
+              </button>
+            </form>
+          </div>
+        </div>
+        <button
+          className="fab-button"
+          onClick={() => setShowInstructions(true)}
+        >
+          ?
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "dispatch-scan") {
+    return (
+      <div className="screen-container bg-gray text-center">
+        {alertModal.isOpen && (
+          <div
+            className="modal-overlay"
+            style={{ zIndex: 9999 }}
+            onClick={() => setAlertModal({ ...alertModal, isOpen: false })}
+          >
+            <div className="modal-card text-center">
+              <h3
+                style={{
+                  color: alertModal.type === "error" ? "#ef4444" : "#10b981",
+                }}
+              >
+                {alertModal.type === "error" ? "⚠️ Alert" : "✅ Success"}
+              </h3>
+              <p
+                style={{
+                  margin: "15px 0",
+                  color: "#475569",
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                }}
+              >
+                {alertModal.message}
+              </p>
+            </div>
+          </div>
+        )}
+        <div className="top-nav">
+          <button
+            className="btn-text"
+            onClick={() => {
+              setActivePallet(null);
+              setStep("dispatch-pallet");
+            }}
+          >
+            ⬅ Change Pallet
+          </button>{" "}
+          <span className="font-bold">
+            {activePallet.PalletNumber || "Active"}
+          </span>
+        </div>
+        <div style={{ padding: "20px" }}>
+          <div
+            className="card-box"
+            style={{
+              padding: "20px",
+              marginBottom: "15px",
+              width: "100%",
+              maxWidth: "100%",
+            }}
+          >
+            <h3 style={{ color: "#3b82f6" }}>{activePallet.StoreName}</h3>
+            <form onSubmit={handleScanSubmit} style={{ marginTop: "15px" }}>
+              <input
+                type="text"
+                ref={scanInputRef}
+                className="modal-input"
+                placeholder="Scan Box Barcode here..."
+                value={cartonScanInput}
+                onChange={(e) => setCartonScanInput(e.target.value)}
+                style={{ marginBottom: "10px" }}
+                autoFocus
+              />
+              <button type="submit" className="btn-primary full-width">
+                Scan (Enter)
+              </button>
+            </form>
+          </div>
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "15px",
+              textAlign: "left",
+            }}
+          >
+            <h4
+              style={{
+                borderBottom: "1px solid #ccc",
+                paddingBottom: "10px",
+                color: "#10b981",
+                marginTop: "10px",
+              }}
+            >
+              ✅ Accepted Scans ({activePallet.AcceptedCartons.length})
+            </h4>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "10px",
+                marginTop: "10px",
+              }}
+            >
+              {activePallet.AcceptedCartons.length === 0 && (
+                <p className="text-muted" style={{ fontSize: "13px" }}>
+                  No boxes verified yet.
+                </p>
+              )}
+              {activePallet.AcceptedCartons.map((b) => (
+                <span
+                  key={b}
+                  style={{
+                    background: "#dcfce7",
+                    color: "#166534",
+                    padding: "5px 10px",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                  }}
+                >
+                  📦 {b}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- INVENTORY AUDIT HOLD/WAITING SCREENS ---
+  if (
+    !isAuditRunning &&
+    allProducts.length > 0 &&
+    (step === "zone-select" || step === "location-select" || step === "audit")
+  ) {
+    return (
+      <div
+        className="screen-container bg-dark text-center"
+        style={{ justifyContent: "center", position: "relative" }}
+      >
+        <div
+          className="top-nav"
+          style={{
+            position: "absolute",
+            top: 0,
+            width: "100%",
+            background: "rgba(15, 23, 42, 0.9)",
+            borderBottom: "1px solid #334155",
+          }}
+        >
+          <span className="font-bold" style={{ color: "white" }}>
+            Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
+          </span>
+          <button
+            className="btn-text danger"
+            style={{ color: "#ef4444" }}
+            onClick={handleExitSession}
+          >
+            Exit
+          </button>
+        </div>
+        {renderInstructions()}
+        <h1 style={{ fontSize: "60px", margin: "0" }}>⏸</h1>
+        <h2 style={{ color: "#fca5a5", marginTop: "20px" }}>
+          Audit is on Hold
+        </h2>
+        <p className="text-muted">Admin has paused the session...</p>
+        <button
+          className="btn-secondary"
+          onClick={() => setStep("module-select")}
+          style={{ marginTop: "20px" }}
+        >
+          ⬅ Back to Menu
         </button>
       </div>
     );
@@ -432,77 +857,31 @@ const AuditWorkspace = () => {
             style={{ color: "#ef4444" }}
             onClick={handleExitSession}
           >
-            Exit Session
+            Exit
           </button>
         </div>
-
         {renderInstructions()}
-
         <h1 style={{ fontSize: "60px", margin: "0" }}>⏳</h1>
         <h2 style={{ color: "#fcd34d", marginTop: "20px" }}>
           Waiting for Admin
         </h2>
         <p className="text-muted" style={{ padding: "0 15px" }}>
-          Session is created, but the Master Excel File hasn't been uploaded
-          yet. This screen will auto-refresh when it's ready!
+          Master Excel File hasn't been uploaded yet.
         </p>
         <button
-          className="fab-button"
-          onClick={() => setShowInstructions(true)}
+          className="btn-secondary"
+          onClick={() => setStep("module-select")}
+          style={{ marginTop: "20px" }}
         >
-          ?
+          ⬅ Back to Menu
         </button>
       </div>
     );
   }
 
-  if (!isAuditRunning && allProducts.length > 0) {
-    return (
-      <div
-        className="screen-container bg-dark text-center"
-        style={{ justifyContent: "center", position: "relative" }}
-      >
-        <div
-          className="top-nav"
-          style={{
-            position: "absolute",
-            top: 0,
-            width: "100%",
-            background: "rgba(15, 23, 42, 0.9)",
-            borderBottom: "1px solid #334155",
-          }}
-        >
-          <span className="font-bold" style={{ color: "white" }}>
-            Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
-          </span>
-          <button
-            className="btn-text danger"
-            style={{ color: "#ef4444" }}
-            onClick={handleExitSession}
-          >
-            Exit Session
-          </button>
-        </div>
-
-        {renderInstructions()}
-
-        <h1 style={{ fontSize: "60px", margin: "0" }}>⏸</h1>
-        <h2 style={{ color: "#fca5a5", marginTop: "20px" }}>
-          Audit is on Hold
-        </h2>
-        <p className="text-muted">Admin has paused the session...</p>
-        <button
-          className="fab-button"
-          onClick={() => setShowInstructions(true)}
-        >
-          ?
-        </button>
-      </div>
-    );
-  }
-
+  // --- RESTORED INVENTORY AUDIT (SWIPE) SCREENS ---
   return (
-    <>
+    <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
           <div className="modal-card text-center">
@@ -527,25 +906,24 @@ const AuditWorkspace = () => {
           </div>
         </div>
       )}
-
       {renderInstructions()}
 
       {step === "zone-select" && (
-        <div
-          className="screen-container bg-light"
-          style={{ overflowY: "auto" }}
-        >
+        <>
           <div className="top-nav">
+            <button
+              className="btn-text"
+              onClick={() => setStep("module-select")}
+            >
+              ⬅ Menu
+            </button>
             <span className="font-bold">
               Team ID: <span style={{ color: "#3b82f6" }}>{sessionId}</span>
             </span>
-            <button className="btn-text danger" onClick={handleExitSession}>
-              Exit
-            </button>
           </div>
           <div
             className="card-box text-center mt-5"
-            style={{ padding: "15px 10px" }}
+            style={{ padding: "15px 10px", maxWidth: "100%" }}
           >
             <h2 style={{ marginBottom: "20px" }}>Select Zone</h2>
             <div className="zone-grid" style={{ padding: 0 }}>
@@ -558,9 +936,7 @@ const AuditWorkspace = () => {
                     className="btn-zone"
                     onClick={() => handleZoneSelect(zone)}
                     disabled={isDone}
-                    style={{
-                      ...getButtonStyle(isDone, isUnlocked),
-                    }}
+                    style={{ ...getButtonStyle(isDone, isUnlocked) }}
                   >
                     {zone} <br />{" "}
                     <span style={{ fontSize: "13px", fontWeight: "normal" }}>
@@ -578,27 +954,21 @@ const AuditWorkspace = () => {
               <p className="text-muted mt-2">No Zones loaded yet.</p>
             )}
           </div>
-          <button
-            className="fab-button"
-            onClick={() => setShowInstructions(true)}
-          >
-            ?
-          </button>
-        </div>
+        </>
       )}
 
       {step === "location-select" && (
-        <div
-          className="screen-container bg-light"
-          style={{ overflowY: "auto" }}
-        >
+        <>
           <div className="top-nav">
             <button className="btn-text" onClick={() => setStep("zone-select")}>
               ⬅ Zones
             </button>
             <span className="font-bold">Zone: {selectedZone}</span>
           </div>
-          <div className="card-box text-center mt-5">
+          <div
+            className="card-box text-center mt-5"
+            style={{ maxWidth: "100%" }}
+          >
             <div
               style={{
                 display: "flex",
@@ -617,8 +987,7 @@ const AuditWorkspace = () => {
                 ✅ Lock Zone
               </button>
             </div>
-
-            <div className="zone-grid mt-2">
+            <div className="zone-grid mt-2" style={{ padding: 0 }}>
               {getLocationsForZone().map((loc) => {
                 const locKey = `${selectedZone}___${loc}`;
                 const isDone = completedLocations.includes(locKey);
@@ -644,7 +1013,6 @@ const AuditWorkspace = () => {
               })}
             </div>
           </div>
-
           {isZoneCompletionModalOpen && (
             <div className="modal-overlay">
               <div className="modal-card text-center">
@@ -670,13 +1038,7 @@ const AuditWorkspace = () => {
               </div>
             </div>
           )}
-          <button
-            className="fab-button"
-            onClick={() => setShowInstructions(true)}
-          >
-            ?
-          </button>
-        </div>
+        </>
       )}
 
       {step === "audit" && (
@@ -714,7 +1076,6 @@ const AuditWorkspace = () => {
               </div>
             </div>
           )}
-
           {isCompletionModalOpen && (
             <div className="modal-overlay">
               <div className="modal-card text-center">
@@ -739,7 +1100,6 @@ const AuditWorkspace = () => {
               </div>
             </div>
           )}
-
           {isFlagConfirmModalOpen && (
             <div className="modal-overlay">
               <div className="modal-card text-center">
@@ -765,7 +1125,6 @@ const AuditWorkspace = () => {
               </div>
             </div>
           )}
-
           <div className="top-nav shadow-sm">
             <button
               className="btn-text"
@@ -777,7 +1136,6 @@ const AuditWorkspace = () => {
               Item: {currentIndex + 1} / {filteredProducts.length}
             </span>
           </div>
-
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -802,11 +1160,9 @@ const AuditWorkspace = () => {
                     {filteredProducts[currentIndex]?.AuditStatus || "Pending"}
                   </span>
                 </div>
-
                 <h2 className="product-title">
                   {filteredProducts[currentIndex]?.ProductName}
                 </h2>
-
                 <div className="data-grid">
                   <div
                     className={`data-box ${filteredProducts[currentIndex]?.ActualQty !== filteredProducts[currentIndex]?.SystemQty ? "modified" : ""}`}
@@ -871,11 +1227,10 @@ const AuditWorkspace = () => {
                       </span>
                     )}
                   </div>
-
                   <div className="data-box full-span">
                     <small>Barcode Verification</small>
                     {filteredProducts[currentIndex]?.barcodePhase === 2 ? (
-                      <div className>
+                      <div>
                         <h3 className="text-success">
                           {filteredProducts[currentIndex]?.ActualBarcode}
                         </h3>
@@ -964,7 +1319,6 @@ const AuditWorkspace = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="tinder-hints">
                   <div className="hint-row">
                     <span className="hint-undo">⬅ Verify Match</span>
@@ -984,15 +1338,12 @@ const AuditWorkspace = () => {
               </div>
             </motion.div>
           </AnimatePresence>
-          <button
-            className="fab-button"
-            onClick={() => setShowInstructions(true)}
-          >
-            ?
-          </button>
         </div>
       )}
-    </>
+      <button className="fab-button" onClick={() => setShowInstructions(true)}>
+        ?
+      </button>
+    </div>
   );
 };
 export default AuditWorkspace;
