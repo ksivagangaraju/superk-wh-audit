@@ -250,11 +250,13 @@ const AdminDashboard = () => {
           const storeName =
             getVal("storename") || getVal("store") || "Unknown Store";
           let rawCartons = getVal("acceptedcartons") || getVal("cartons") || "";
+
+          // 🚀 DIRECT EXCEL MAPPING (NO MANUAL ENTRY)
           let palletNumber =
             getVal("palletnumber") ||
             getVal("palletno") ||
             getVal("pallet") ||
-            "";
+            "Unassigned";
 
           let cartonsArray = [];
           if (typeof rawCartons === "string" && rawCartons.trim() !== "") {
@@ -279,7 +281,10 @@ const AdminDashboard = () => {
           excelData: formattedDispatch,
         });
         setDispatchData(formattedDispatch);
-        showAlert("Dispatch Excel Uploaded Successfully!", "success");
+        showAlert(
+          "Dispatch Excel Uploaded Successfully! Pallets assigned automatically.",
+          "success",
+        );
       } catch (err) {
         showAlert("Parsing failed: " + err.message, "error");
       }
@@ -293,10 +298,7 @@ const AdminDashboard = () => {
       (item) => String(item.AuditStatus).toLowerCase() !== "pending",
     );
     if (auditedData.length === 0)
-      return showAlert(
-        "No items have been audited yet! Users need to verify items first.",
-        "error",
-      );
+      return showAlert("No items have been audited yet!", "error");
     try {
       const exportFormat = auditedData.map((item) => ({
         "Product Name": item.ProductName,
@@ -340,37 +342,6 @@ const AdminDashboard = () => {
     socket.emit("unlock-location", { sessionId, locationKey });
   const handleUnlockZone = (zoneName) =>
     socket.emit("unlock-zone", { sessionId, zoneName });
-
-  const handleAssignPallet = (storeName, newValue, inputElement) => {
-    const trimmedVal = newValue.trim();
-    if (!trimmedVal) {
-      socket.emit("map-pallet-to-store", {
-        sessionId,
-        storeName,
-        palletNumber: "",
-      });
-      return;
-    }
-    const isDuplicate = dispatchData.some(
-      (s) =>
-        s.StoreName !== storeName &&
-        s.PalletNumber.toLowerCase() === trimmedVal.toLowerCase(),
-    );
-    if (isDuplicate) {
-      showAlert(
-        `Pallet No '${trimmedVal}' is already assigned to another Store!`,
-        "error",
-      );
-      inputElement.value =
-        dispatchData.find((s) => s.StoreName === storeName).PalletNumber || "";
-      return;
-    }
-    socket.emit("map-pallet-to-store", {
-      sessionId,
-      storeName,
-      palletNumber: trimmedVal,
-    });
-  };
 
   const openDispatchDetails = (store, type) => {
     let dataToShow = [];
@@ -468,6 +439,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
+      {/* Modals & Alerts */}
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
           <div className="modal-card text-center">
@@ -746,7 +718,6 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* RESTORED INVENTORY ZONES/LOCATIONS GRIDS */}
               <div className="card-box">
                 {!selectedZoneAdmin ? (
                   <>
@@ -1003,26 +974,18 @@ const AdminDashboard = () => {
                       }}
                     >
                       <h3 style={{ margin: 0 }}>{store.StoreName}</h3>
-                      <input
-                        type="text"
-                        placeholder="Pallet No"
-                        defaultValue={store.PalletNumber}
-                        key={store.PalletNumber}
-                        onBlur={(e) =>
-                          handleAssignPallet(
-                            store.StoreName,
-                            e.target.value,
-                            e.target,
-                          )
-                        }
+                      {/* 🚀 REMOVED INPUT BOX. Pallet Number is Display Only */}
+                      <span
                         style={{
-                          padding: "8px",
+                          background: "#e2e8f0",
+                          padding: "5px 10px",
                           borderRadius: "5px",
-                          border: "1px solid #ccc",
-                          width: "120px",
-                          background: "#f8fafc",
+                          fontWeight: "bold",
+                          color: "#334155",
                         }}
-                      />
+                      >
+                        📍 {store.PalletNumber}
+                      </span>
                     </div>
 
                     <div className="tracker-stats">
@@ -1062,4 +1025,5 @@ const AdminDashboard = () => {
     </div>
   );
 };
+
 export default AdminDashboard;

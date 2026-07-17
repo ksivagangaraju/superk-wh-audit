@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import io from "socket.io-client";
+import BarcodeScanner from "../components/BarcodeScanner";
 
 const BACKEND_URL =
   window.location.hostname === "localhost" ||
@@ -44,11 +45,13 @@ const AuditWorkspace = () => {
     value: "",
     title: "",
   });
-  const [showScanner, setShowScanner] = useState(false);
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
   const [isFlagConfirmModalOpen, setIsFlagConfirmModalOpen] = useState(false);
   const [isZoneCompletionModalOpen, setIsZoneCompletionModalOpen] =
     useState(false);
+
+  // 🚀 Camera State
+  const [cameraMode, setCameraMode] = useState(null); // 'inventory' | 'dispatch-find' | 'dispatch-scan' | null
 
   // DISPATCH
   const [dispatchData, setDispatchData] = useState([]);
@@ -199,9 +202,7 @@ const AuditWorkspace = () => {
     }
   };
 
-  const handleFindCarton = (e) => {
-    e.preventDefault();
-    const carton = searchCartonInput.trim();
+  const executeFindCarton = (carton) => {
     if (!carton) return;
     let foundStore = null;
     for (let store of dispatchData) {
@@ -221,6 +222,11 @@ const AuditWorkspace = () => {
         "error",
       );
     setSearchCartonInput("");
+  };
+
+  const handleFindCartonSubmit = (e) => {
+    e.preventDefault();
+    executeFindCarton(searchCartonInput.trim());
   };
 
   const handleScanSubmit = (e) => {
@@ -468,7 +474,7 @@ const AuditWorkspace = () => {
     return (
       <div className="screen-container bg-light text-center">
         <div className="top-nav">
-          <span className="font-bold">Team ID: {sessionId}</span>{" "}
+          <span className="font-bold">Team ID: {sessionId}</span>
           <button className="btn-text danger" onClick={handleExitSession}>
             Exit
           </button>
@@ -561,6 +567,14 @@ const AuditWorkspace = () => {
   if (step === "dispatch-pallet") {
     return (
       <div className="screen-container bg-light text-center">
+        {/* CAMERA SCANNER MODAL */}
+        {cameraMode === "dispatch-find" && (
+          <BarcodeScanner
+            onScan={(code) => executeFindCarton(code)}
+            onClose={() => setCameraMode(null)}
+          />
+        )}
+
         {alertModal.isOpen && (
           <div className="modal-overlay" style={{ zIndex: 9999 }}>
             <div className="modal-card text-center">
@@ -595,7 +609,7 @@ const AuditWorkspace = () => {
         <div className="top-nav">
           <button className="btn-text" onClick={() => setStep("module-select")}>
             ⬅ Back
-          </button>{" "}
+          </button>
           <span className="font-bold">Dispatch</span>
         </div>
         <div style={{ padding: "20px" }}>
@@ -637,14 +651,32 @@ const AuditWorkspace = () => {
             <p className="text-muted" style={{ fontSize: "13px" }}>
               Scan carton to check its Pallet
             </p>
-            <form onSubmit={handleFindCarton}>
+            <form
+              onSubmit={handleFindCartonSubmit}
+              style={{ position: "relative" }}
+            >
               <input
                 type="text"
                 className="modal-input"
-                placeholder="Scan Carton Barcode..."
+                placeholder="Scan/Type Barcode..."
                 value={searchCartonInput}
                 onChange={(e) => setSearchCartonInput(e.target.value)}
+                style={{ paddingRight: "40px" }}
               />
+              {/* 🚀 Camera Button inside Input */}
+              <button
+                type="button"
+                className="btn-text"
+                onClick={() => setCameraMode("dispatch-find")}
+                style={{
+                  position: "absolute",
+                  right: "5px",
+                  top: "10px",
+                  fontSize: "20px",
+                }}
+              >
+                📷
+              </button>
               <button type="submit" className="btn-secondary full-width">
                 🔍 Search Carton
               </button>
@@ -664,6 +696,22 @@ const AuditWorkspace = () => {
   if (step === "dispatch-scan") {
     return (
       <div className="screen-container bg-gray text-center">
+        {/* CAMERA SCANNER MODAL */}
+        {cameraMode === "dispatch-scan" && (
+          <BarcodeScanner
+            onScan={(code) => {
+              setCartonScanInput(code);
+              socket.emit("verify-dispatch-carton", {
+                sessionId,
+                currentPallet: activePallet.PalletNumber,
+                cartonNumber: code,
+                userName,
+              });
+            }}
+            onClose={() => setCameraMode(null)}
+          />
+        )}
+
         {alertModal.isOpen && (
           <div
             className="modal-overlay"
@@ -700,7 +748,7 @@ const AuditWorkspace = () => {
             }}
           >
             ⬅ Change Pallet
-          </button>{" "}
+          </button>
           <span className="font-bold">
             {activePallet.PalletNumber || "Active"}
           </span>
@@ -716,7 +764,10 @@ const AuditWorkspace = () => {
             }}
           >
             <h3 style={{ color: "#3b82f6" }}>{activePallet.StoreName}</h3>
-            <form onSubmit={handleScanSubmit} style={{ marginTop: "15px" }}>
+            <form
+              onSubmit={handleScanSubmit}
+              style={{ marginTop: "15px", position: "relative" }}
+            >
               <input
                 type="text"
                 ref={scanInputRef}
@@ -724,9 +775,23 @@ const AuditWorkspace = () => {
                 placeholder="Scan Box Barcode here..."
                 value={cartonScanInput}
                 onChange={(e) => setCartonScanInput(e.target.value)}
-                style={{ marginBottom: "10px" }}
+                style={{ marginBottom: "10px", paddingRight: "40px" }}
                 autoFocus
               />
+              {/* 🚀 Camera Button inside Input */}
+              <button
+                type="button"
+                className="btn-text"
+                onClick={() => setCameraMode("dispatch-scan")}
+                style={{
+                  position: "absolute",
+                  right: "5px",
+                  top: "10px",
+                  fontSize: "20px",
+                }}
+              >
+                📷
+              </button>
               <button type="submit" className="btn-primary full-width">
                 Scan (Enter)
               </button>
@@ -784,7 +849,6 @@ const AuditWorkspace = () => {
     );
   }
 
-  // --- INVENTORY AUDIT HOLD/WAITING SCREENS ---
   if (
     !isAuditRunning &&
     allProducts.length > 0 &&
@@ -882,6 +946,21 @@ const AuditWorkspace = () => {
   // --- RESTORED INVENTORY AUDIT (SWIPE) SCREENS ---
   return (
     <div className="screen-container bg-light" style={{ overflowY: "auto" }}>
+      {/* CAMERA SCANNER MODAL */}
+      {cameraMode === "inventory" && (
+        <BarcodeScanner
+          onScan={(code) =>
+            updateProductState(
+              filteredProducts[currentIndex].uid,
+              "ActualBarcode",
+              code,
+              { barcodePhase: 2 },
+            )
+          }
+          onClose={() => setCameraMode(null)}
+        />
+      )}
+
       {alertModal.isOpen && (
         <div className="modal-overlay" style={{ zIndex: 9999 }}>
           <div className="modal-card text-center">
@@ -1228,7 +1307,23 @@ const AuditWorkspace = () => {
                     )}
                   </div>
                   <div className="data-box full-span">
-                    <small>Barcode Verification</small>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <small style={{ margin: 0 }}>Barcode Verification</small>
+                      {/* 🚀 Camera Scan Button for Inventory */}
+                      <button
+                        className="btn-text sm"
+                        onClick={() => setCameraMode("inventory")}
+                        style={{ padding: 0 }}
+                      >
+                        📷 Camera Scan
+                      </button>
+                    </div>
                     {filteredProducts[currentIndex]?.barcodePhase === 2 ? (
                       <div>
                         <h3 className="text-success">
@@ -1346,4 +1441,5 @@ const AuditWorkspace = () => {
     </div>
   );
 };
+
 export default AuditWorkspace;
