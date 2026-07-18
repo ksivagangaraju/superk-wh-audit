@@ -62,6 +62,45 @@ const AuditWorkspace = () => {
   const [cartonScanInput, setCartonScanInput] = useState("");
   const scanInputRef = useRef(null);
 
+  const [dispatchDetailsModal, setDispatchDetailsModal] = useState({
+    isOpen: false,
+    title: "",
+    data: [],
+  });
+
+  const openDispatchDetails = (type) => {
+    if (!activePallet) return;
+    let dataToShow = [];
+
+    if (type === "Pending") {
+      const pendingBoxes = activePallet.ExpectedCartons.filter(
+        (c) => !activePallet.AcceptedCartons.includes(c),
+      );
+      dataToShow = pendingBoxes.map((b) => ({
+        carton: b,
+        details: "⏳ Not scanned yet",
+      }));
+    } else if (type === "Scanned") {
+      dataToShow = activePallet.AcceptedCartons.map((b) => ({
+        carton: b,
+        details: "✅ Verified",
+      }));
+    } else if (type === "Total") {
+      dataToShow = activePallet.ExpectedCartons.map((b) => ({
+        carton: b,
+        details: activePallet.AcceptedCartons.includes(b)
+          ? "✅ Verified"
+          : "⏳ Pending",
+      }));
+    }
+
+    setDispatchDetailsModal({
+      isOpen: true,
+      title: `${activePallet.StoreName} (${type})`,
+      data: dataToShow,
+    });
+  };
+
   const showAlert = (message, type = "info") =>
     setAlertModal({ isOpen: true, message, type });
 
@@ -147,7 +186,6 @@ const AuditWorkspace = () => {
     socket.on("dispatch-scan-result", (res) => {
       showAlert(res.message, res.success ? "info" : "error");
       setCartonScanInput("");
-      if (scanInputRef.current) scanInputRef.current.focus();
     });
 
     socket.on("session-cleared", () => {
@@ -694,7 +732,6 @@ const AuditWorkspace = () => {
   }
 
   if (step === "dispatch-scan") {
-    // 🚀 STATS CALCULATIONS ADD CHESANU
     const totalCartons = activePallet.ExpectedCartons
       ? activePallet.ExpectedCartons.length
       : 0;
@@ -719,6 +756,71 @@ const AuditWorkspace = () => {
             }}
             onClose={() => setCameraMode(null)}
           />
+        )}
+
+        {/* 🚀 DISPATCH DETAILS MODAL (CLICK CHESTHE VASTHUNDI) */}
+        {dispatchDetailsModal.isOpen && (
+          <div className="modal-overlay" style={{ zIndex: 10000 }}>
+            <div className="modal-card" style={{ maxWidth: "450px" }}>
+              <h3
+                style={{
+                  borderBottom: "2px solid #e2e8f0",
+                  paddingBottom: "10px",
+                  marginBottom: "15px",
+                }}
+              >
+                {dispatchDetailsModal.title}
+              </h3>
+              <div
+                style={{
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  textAlign: "left",
+                }}
+              >
+                {dispatchDetailsModal.data.length === 0 ? (
+                  <p className="text-muted text-center">No items found.</p>
+                ) : null}
+                {dispatchDetailsModal.data.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: "10px",
+                      borderBottom: "1px solid #f1f5f9",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <b style={{ color: "#0f172a", fontSize: "15px" }}>
+                      📦 {item.carton}
+                    </b>{" "}
+                    <br />
+                    <span
+                      style={{
+                        color: "#64748b",
+                        fontSize: "13px",
+                        marginTop: "5px",
+                        display: "block",
+                      }}
+                    >
+                      {item.details}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="btn-primary full-width mt-2"
+                onClick={() =>
+                  setDispatchDetailsModal({
+                    isOpen: false,
+                    title: "",
+                    data: [],
+                  })
+                }
+              >
+                Close
+              </button>
+            </div>
+          </div>
         )}
 
         {alertModal.isOpen && (
@@ -778,7 +880,7 @@ const AuditWorkspace = () => {
               {activePallet.StoreName}
             </h3>
 
-            {/* 🚀 KOTHA STATS TRACKER UI */}
+            {/* 🚀 STATS TRACKER UI WITH CLICK EVENTS */}
             <div
               style={{
                 display: "flex",
@@ -790,7 +892,10 @@ const AuditWorkspace = () => {
                 marginBottom: "15px",
               }}
             >
-              <div style={{ textAlign: "center", flex: 1 }}>
+              <div
+                style={{ textAlign: "center", flex: 1, cursor: "pointer" }}
+                onClick={() => openDispatchDetails("Total")}
+              >
                 <h2 style={{ margin: 0, color: "#334155" }}>{totalCartons}</h2>
                 <small
                   style={{
@@ -803,7 +908,10 @@ const AuditWorkspace = () => {
                 </small>
               </div>
               <div style={{ width: "1px", background: "#cbd5e1" }}></div>
-              <div style={{ textAlign: "center", flex: 1 }}>
+              <div
+                style={{ textAlign: "center", flex: 1, cursor: "pointer" }}
+                onClick={() => openDispatchDetails("Scanned")}
+              >
                 <h2 style={{ margin: 0, color: "#10b981" }}>
                   {acceptedCartons}
                 </h2>
@@ -818,7 +926,10 @@ const AuditWorkspace = () => {
                 </small>
               </div>
               <div style={{ width: "1px", background: "#cbd5e1" }}></div>
-              <div style={{ textAlign: "center", flex: 1 }}>
+              <div
+                style={{ textAlign: "center", flex: 1, cursor: "pointer" }}
+                onClick={() => openDispatchDetails("Pending")}
+              >
                 <h2 style={{ margin: 0, color: "#f59e0b" }}>
                   {pendingCartons}
                 </h2>
@@ -848,7 +959,10 @@ const AuditWorkspace = () => {
               <button
                 type="button"
                 className="btn-text"
-                onClick={() => setCameraMode("dispatch-scan")}
+                onClick={() => {
+                  if (scanInputRef.current) scanInputRef.current.blur();
+                  setCameraMode("dispatch-scan");
+                }}
                 style={{
                   position: "absolute",
                   right: "5px",
