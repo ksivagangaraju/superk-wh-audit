@@ -4,13 +4,11 @@ import { Html5Qrcode } from "html5-qrcode";
 const BarcodeScanner = ({ onScan, onClose }) => {
   const scannerRef = useRef(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const isScanned = useRef(false); // 🚀 Okkasari scan ayyaka block cheyadaniki flag
+  const isProcessing = useRef(false); // 🚀 Fast multi-scans ni block cheyadaniki
 
   useEffect(() => {
-    // Component open ayina 100ms tarvatha div ni ready chesthundi
-    const timer = setTimeout(() => {
-      setIsCameraReady(true);
-    }, 100);
+    // 100ms aagi DOM load ayyaka div ready chesthundi
+    const timer = setTimeout(() => setIsCameraReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -29,35 +27,42 @@ const BarcodeScanner = ({ onScan, onClose }) => {
           aspectRatio: 1.0,
         },
         (decodedText) => {
-          // 🚀 THE FIX: Double scan triggers ni block chesthundi
-          if (isScanned.current) return;
-          isScanned.current = true;
+          // 🚀 FIX: Fast ga double scan ayithe reject chesthundi
+          if (isProcessing.current) return;
+          isProcessing.current = true;
 
-          // 🚀 THE FIX: Ikkada manual ga stop/clear kottakunda direct data pampinchi onClose chesthunnam.
-          // Deeni valla React DOM crash avvadu. React automatic ga component close chesthundi.
+          // 🚀 FIX: Ikkada manual ga camera stop/clear cheyatledu.
+          // Direct ga onScan pampi onClose() chesthunnam.
+          // Deenivalla React smooth ga component ni unmount chesthundi.
           onScan(decodedText);
           onClose();
         },
         (errorMessage) => {
-          // Ignore scanning errors
+          // Background error console ignore
         },
       )
-      .catch((err) => console.error("Camera error:", err));
+      .catch((err) => console.warn("Camera start error:", err));
 
-    // 🚀 React Component close (unmount) ayyaka SAFE ga camera aagipothundi
+    // 🚀 CLEANUP FIX (Idi app crash ni aputhundi)
     return () => {
+      // Component close ainappudu ONLY hardware lens off chestham. (.clear() asalu vadaddu)
+      // .clear() vadithe React DOM tho clash ayyi App Blank/Crash avuthundi.
       if (scannerRef.current) {
-        scannerRef.current
-          .stop()
-          .then(() => {
-            scannerRef.current.clear();
-          })
-          .catch(() => {
-            // Error vacchina lite theesko
-          });
+        try {
+          scannerRef.current.stop().catch(() => {});
+        } catch (error) {
+          // ignore
+        }
       }
     };
   }, [isCameraReady, onScan, onClose]);
+
+  const handleClose = () => {
+    // Cancel click chesinappudu kuda safe close
+    if (isProcessing.current) return;
+    isProcessing.current = true;
+    onClose();
+  };
 
   return (
     <div
@@ -116,10 +121,9 @@ const BarcodeScanner = ({ onScan, onClose }) => {
           )}
         </div>
 
-        {/* 🚀 Button Click lo kuda direct React onClose() peduthunnam. Crash radu. */}
         <button
           className="btn-danger full-width"
-          onClick={onClose}
+          onClick={handleClose}
           style={{
             marginTop: "20px",
             padding: "12px",

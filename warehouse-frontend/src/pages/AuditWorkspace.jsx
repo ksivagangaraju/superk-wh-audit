@@ -267,15 +267,49 @@ const AuditWorkspace = () => {
     executeFindCarton(searchCartonInput.trim());
   };
 
-  const handleScanSubmit = (e) => {
-    e.preventDefault();
-    if (cartonScanInput.trim() === "") return;
+  // 🚀 KOTHA: Scan ni process mariyu Duplicate check chese function
+  const processCartonScan = (code) => {
+    const trimmedCode = code.trim();
+    if (!trimmedCode) return;
+
+    // 1. Box already scan ayyinda ledha ani check chesthundi
+    if (activePallet && activePallet.AcceptedCartons.includes(trimmedCode)) {
+      // 2. Evaru scan chesaro vethukuthundi (Admin format nunchi)
+      const scannedByWhom =
+        activePallet.ScannedBy && activePallet.ScannedBy[trimmedCode]
+          ? activePallet.ScannedBy[trimmedCode].user
+          : "another user";
+
+      // 3. Error chupinchi, text box clear chesthundi
+      showAlert(
+        `⚠️ Carton ${trimmedCode} was already scanned by ${scannedByWhom}!`,
+        "error",
+      );
+      setCartonScanInput("");
+      return; // Backend ki vellakunda ikkade aagipothundi
+    }
+
+    // Okavela kotha box ayithe backend ki pamputhundi
+    setCartonScanInput(trimmedCode);
     socket.emit("verify-dispatch-carton", {
       sessionId,
       currentPallet: activePallet.PalletNumber,
-      cartonNumber: cartonScanInput.trim(),
+      cartonNumber: trimmedCode,
       userName,
     });
+  };
+
+  const handleScanSubmit = (e) => {
+    e.preventDefault();
+
+    // 🚀 TYPING FIX: Type chesi Enter (Scan) kottagane keyboard close aipothundi
+    if (scanInputRef.current) {
+      scanInputRef.current.blur();
+    }
+
+    // Typing data ni process function ki pamputhundi
+
+    processCartonScan(cartonScanInput);
   };
 
   const handleZoneSelect = (zone) => {
@@ -745,15 +779,7 @@ const AuditWorkspace = () => {
         {/* CAMERA SCANNER MODAL */}
         {cameraMode === "dispatch-scan" && (
           <BarcodeScanner
-            onScan={(code) => {
-              setCartonScanInput(code);
-              socket.emit("verify-dispatch-carton", {
-                sessionId,
-                currentPallet: activePallet.PalletNumber,
-                cartonNumber: code,
-                userName,
-              });
-            }}
+            onScan={(code) => processCartonScan(code)}
             onClose={() => setCameraMode(null)}
           />
         )}
