@@ -3,21 +3,38 @@ import { QrReader } from "react-qr-reader";
 
 const BarcodeScanner = ({ onScan, onClose }) => {
   return (
-    <div className="modal-overlay" style={{ zIndex: 11000 }}>
+    <div
+      className="modal-overlay"
+      style={{
+        zIndex: 11000,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       <div
         className="modal-card"
-        style={{ padding: "10px", background: "black" }}
+        style={{
+          padding: "20px",
+          background: "#0f172a",
+          width: "95%",
+          maxWidth: "400px",
+        }}
       >
         <h3
-          style={{ color: "white", textAlign: "center", marginBottom: "10px" }}
+          style={{ color: "white", textAlign: "center", marginBottom: "15px" }}
         >
           📷 Scan Barcode
         </h3>
+
+        {/* Ikkada fixed height theesesanu, video objectFit cover add chesanu */}
         <div
           style={{
-            borderRadius: "15px",
+            width: "100%",
+            borderRadius: "12px",
             overflow: "hidden",
-            border: "2px solid #3b82f6",
+            border: "3px solid #3b82f6",
+            backgroundColor: "#000",
           }}
         >
           <QrReader
@@ -28,10 +45,20 @@ const BarcodeScanner = ({ onScan, onClose }) => {
               }
             }}
             constraints={{ facingMode: "environment" }}
-            containerStyle={{ width: "100%", height: "300px" }}
+            videoStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         </div>
-        <button className="btn-danger full-width mt-2" onClick={onClose}>
+
+        <button
+          className="btn-danger full-width"
+          onClick={onClose}
+          style={{
+            marginTop: "20px",
+            padding: "12px",
+            fontSize: "16px",
+            fontWeight: "bold",
+          }}
+        >
           ❌ Cancel Scan
         </button>
       </div>
