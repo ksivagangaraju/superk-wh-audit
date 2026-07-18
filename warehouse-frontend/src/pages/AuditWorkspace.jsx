@@ -694,6 +694,15 @@ const AuditWorkspace = () => {
   }
 
   if (step === "dispatch-scan") {
+    // 🚀 STATS CALCULATIONS ADD CHESANU
+    const totalCartons = activePallet.ExpectedCartons
+      ? activePallet.ExpectedCartons.length
+      : 0;
+    const acceptedCartons = activePallet.AcceptedCartons
+      ? activePallet.AcceptedCartons.length
+      : 0;
+    const pendingCartons = totalCartons - acceptedCartons;
+
     return (
       <div className="screen-container bg-gray text-center">
         {/* CAMERA SCANNER MODAL */}
@@ -739,6 +748,7 @@ const AuditWorkspace = () => {
             </div>
           </div>
         )}
+
         <div className="top-nav">
           <button
             className="btn-text"
@@ -753,6 +763,7 @@ const AuditWorkspace = () => {
             {activePallet.PalletNumber || "Active"}
           </span>
         </div>
+
         <div style={{ padding: "20px" }}>
           <div
             className="card-box"
@@ -763,11 +774,67 @@ const AuditWorkspace = () => {
               maxWidth: "100%",
             }}
           >
-            <h3 style={{ color: "#3b82f6" }}>{activePallet.StoreName}</h3>
-            <form
-              onSubmit={handleScanSubmit}
-              style={{ marginTop: "15px", position: "relative" }}
+            <h3 style={{ color: "#3b82f6", margin: "0 0 10px 0" }}>
+              {activePallet.StoreName}
+            </h3>
+
+            {/* 🚀 KOTHA STATS TRACKER UI */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                background: "#f8fafc",
+                padding: "15px",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                marginBottom: "15px",
+              }}
             >
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <h2 style={{ margin: 0, color: "#334155" }}>{totalCartons}</h2>
+                <small
+                  style={{
+                    color: "#64748b",
+                    fontWeight: "bold",
+                    fontSize: "12px",
+                  }}
+                >
+                  📦 Total
+                </small>
+              </div>
+              <div style={{ width: "1px", background: "#cbd5e1" }}></div>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <h2 style={{ margin: 0, color: "#10b981" }}>
+                  {acceptedCartons}
+                </h2>
+                <small
+                  style={{
+                    color: "#10b981",
+                    fontWeight: "bold",
+                    fontSize: "12px",
+                  }}
+                >
+                  ✅ Scanned
+                </small>
+              </div>
+              <div style={{ width: "1px", background: "#cbd5e1" }}></div>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <h2 style={{ margin: 0, color: "#f59e0b" }}>
+                  {pendingCartons}
+                </h2>
+                <small
+                  style={{
+                    color: "#f59e0b",
+                    fontWeight: "bold",
+                    fontSize: "12px",
+                  }}
+                >
+                  ⏳ Pending
+                </small>
+              </div>
+            </div>
+
+            <form onSubmit={handleScanSubmit} style={{ position: "relative" }}>
               <input
                 type="text"
                 ref={scanInputRef}
@@ -778,7 +845,6 @@ const AuditWorkspace = () => {
                 style={{ marginBottom: "10px", paddingRight: "40px" }}
                 autoFocus
               />
-              {/* 🚀 Camera Button inside Input */}
               <button
                 type="button"
                 className="btn-text"
@@ -797,6 +863,7 @@ const AuditWorkspace = () => {
               </button>
             </form>
           </div>
+
           <div
             style={{
               background: "white",
@@ -810,10 +877,10 @@ const AuditWorkspace = () => {
                 borderBottom: "1px solid #ccc",
                 paddingBottom: "10px",
                 color: "#10b981",
-                marginTop: "10px",
+                marginTop: "5px",
               }}
             >
-              ✅ Accepted Scans ({activePallet.AcceptedCartons.length})
+              ✅ Accepted Scans List
             </h4>
             <div
               style={{
