@@ -25,7 +25,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   /* Safe area inset fixes overlapping on iPhone/Android bottom bars */
-  padding-bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 40px) !important;
 }
 
 /* Forces light mode inputs even if OS is in Dark Mode */
