@@ -308,7 +308,6 @@ const AuditWorkspace = () => {
     }
 
     // Typing data ni process function ki pamputhundi
-
     processCartonScan(cartonScanInput);
   };
 
@@ -316,12 +315,14 @@ const AuditWorkspace = () => {
     setSelectedZone(zone);
     setStep("location-select");
   };
+
   const getLocationsForZone = () => {
     const itemsInZone = allProducts.filter(
       (p) => String(p.Zone) === String(selectedZone),
     );
     return [...new Set(itemsInZone.map((p) => p.Location))].sort();
   };
+
   const handleLocationSelect = (loc) => {
     setSelectedLocation(loc);
     const filtered = allProducts.filter(
@@ -371,6 +372,7 @@ const AuditWorkspace = () => {
       "barcodePhase",
       phaseNum,
     );
+
   const resetManualBarcode = () =>
     updateProductState(
       filteredProducts[currentIndex].uid,
@@ -378,6 +380,7 @@ const AuditWorkspace = () => {
       "",
       { barcodePhase: 0 },
     );
+
   const handleAuditAction = (status) => {
     updateProductState(
       filteredProducts[currentIndex].uid,
@@ -388,17 +391,20 @@ const AuditWorkspace = () => {
       setCurrentIndex((prev) => prev + 1);
     else setIsCompletionModalOpen(true);
   };
+
   const confirmLocationCompletion = () => {
     const locationKey = `${selectedZone}___${selectedLocation}`;
     socket.emit("mark-location-complete", { sessionId, locationKey });
     setIsCompletionModalOpen(false);
     setStep("location-select");
   };
+
   const confirmZoneCompletion = () => {
     socket.emit("mark-zone-complete", { sessionId, zoneName: selectedZone });
     setIsZoneCompletionModalOpen(false);
     setStep("zone-select");
   };
+
   const handleDragEnd = (e, info) => {
     const x = info.offset.x;
     const y = info.offset.y;
