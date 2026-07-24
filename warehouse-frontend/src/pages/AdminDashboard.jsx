@@ -251,6 +251,7 @@ const AdminDashboard = () => {
             getVal("storename") || getVal("store") || "Unknown Store";
           let rawCartons = getVal("acceptedcartons") || getVal("cartons") || "";
 
+          // 🚀 DIRECT EXCEL MAPPING (NO MANUAL ENTRY)
           let palletNumber =
             getVal("palletnumber") ||
             getVal("palletno") ||
@@ -275,15 +276,13 @@ const AdminDashboard = () => {
           };
         });
 
-        // 🚀 FIX: Frontend state ni direct ga overwrite cheyatledu.
-        // Backend ki pampisthunnam. Backend merge chesi "dispatch-data-updated" event dwara pamputhundi.
         socket.emit("update-dispatch-excel", {
           sessionId,
           excelData: formattedDispatch,
         });
-
+        setDispatchData(formattedDispatch);
         showAlert(
-          "Excel Processing... Merging with existing data safely!",
+          "Dispatch Excel Uploaded Successfully! Pallets assigned automatically.",
           "success",
         );
       } catch (err) {
@@ -716,21 +715,6 @@ const AdminDashboard = () => {
                   >
                     ⏸ Hold
                   </button>
-                  <button
-                    className="btn-danger"
-                    style={{ background: "#94a3b8" }}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Are you sure you want to clear ALL Inventory Data?",
-                        )
-                      ) {
-                        socket.emit("clear-inventory-data", sessionId);
-                      }
-                    }}
-                  >
-                    🗑️ Clear
-                  </button>
                 </div>
               </div>
 
@@ -967,21 +951,6 @@ const AdminDashboard = () => {
                     disabled={!isDispatchRunning}
                   >
                     ⏸ Hold Scan
-                  </button>
-                  <button
-                    className="btn-danger"
-                    style={{ background: "#94a3b8" }}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Are you sure you want to completely clear Dispatch Data?",
-                        )
-                      ) {
-                        socket.emit("clear-dispatch-data", sessionId);
-                      }
-                    }}
-                  >
-                    🗑️ Clear
                   </button>
                 </div>
               </div>
